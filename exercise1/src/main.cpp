@@ -147,17 +147,15 @@ void drawUnitFace(const glm::mat4& transformMatrix)
     //  For example (rotate 90 degrees around the x axis):
     //  glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1, 0, 0));
 
-    glm::vec4 v0 = glm::vec4(0, 0, 0, 1);
-    glm::vec4 v1 = glm::vec4(0, 1, 0, 1);
-    glm::vec4 v2 = glm::vec4(0, 1, 1, 1);
-    glm::vec4 v3 = glm::vec4(0, 0, 1, 1);
+    glm::vec4 v0 = transformMatrix * glm::vec4(0, 0, 0, 1);
+    glm::vec4 v1 = transformMatrix * glm::vec4(0, 1, 0, 1);
+    glm::vec4 v2 = transformMatrix * glm::vec4(0, 1, 1, 1);
+    glm::vec4 v3 = transformMatrix * glm::vec4(0, 0, 1, 1);
 
-    v0 = transformMatrix * v0;
-    v1 = transformMatrix * v1;
-    v2 = transformMatrix * v2;
-    v3 = transformMatrix * v3;
+    glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(v1 - v0), glm::vec3(v2 - v0)));
 
     glBegin(GL_QUADS);
+    glNormal3f(normal.x, normal.y, normal.z);
     glVertex3f(v0.x, v0.y, v0.z);  // Bottom-left
     glVertex3f(v1.x, v1.y, v1.z);  // Top-left
     glVertex3f(v2.x, v2.y, v2.z);  // Top-right
@@ -166,7 +164,12 @@ void drawUnitFace(const glm::mat4& transformMatrix)
 }
 
 void drawUnitCube(const glm::mat4& transformMatrix)
-{
+{   
+    // 1) Draw a cube using your function drawUnitFace. Use glm::translate(Matrix, Vector)
+    //    and glm::rotate(Matrix, Angle, Vector) to create the transformation matrices
+    //    passed to drawUnitFace.
+    // 2) Transform your cube by the given transformation matrix.
+
     glm::mat4 baseMatrix = glm::mat4(1.0f);
 
     glm::mat4 face1 = glm::translate(baseMatrix, glm::vec3(1.0f, 0.0f, 0.0f)); //translation about x of 1 unit
@@ -186,63 +189,54 @@ void drawUnitCube(const glm::mat4& transformMatrix)
 
     glm::mat4 face6 = glm::translate(baseMatrix, glm::vec3(1.0f, 1.0f, 0.0f)) * glm::rotate(baseMatrix, glm::radians(90.0f),glm::vec3(0.0f, 0.0f, 1.0f)); 
     drawUnitFace(transformMatrix * face6);
-
-    // 1) Draw a cube using your function drawUnitFace. Use glm::translate(Matrix, Vector)
-    //    and glm::rotate(Matrix, Angle, Vector) to create the transformation matrices
-    //    passed to drawUnitFace.
-    // 2) Transform your cube by the given transformation matrix.
-
 }
  
 void drawArm()
-{
+
+{    // Produce a three-unit arm (upperarm, forearm, hand) making use of your function
+    // drawUnitCube to define each of them
+    // 1) Define 3 global variables that control the angles between the arm parts and add
+    //   cases to the keyboard function to control these values
+    // 2) Use these variables to define your arm.
+    //    Use glm::scale(Matrix, Vector) to achieve different arm lengths.
+    //    Use glm::rotate(Matrix, Angle, Vector) to correctly place the elements
+    // 3 Optional) make an animated snake out of these boxes
+    //(an arm with 10 joints that moves using the animate function)
+
     glm::mat4 baseMatrix = glm::mat4(1.0f);
 
-    /*// --- Upper Arm (connected to shoulder) ---
+    /*//Upper Arm (connected to shoulder)
     glm::mat4 rotation = glm::rotate(baseMatrix,  arm_joint[0], glm::vec3(1.0f, 0.0f, 0.0f));
     glm::mat4 translation = glm::translate(baseMatrix, glm::vec3(0.0f, -0.25f, 0.0f));
     glm::mat4 scale = glm::scale(baseMatrix, armScale[0]);
     glm::mat4 transform =rotation * translation * scale;
     glColor3f(1, 0, 0);
-    drawUnitCube(transform);  // Draw upper arm*/
+    drawUnitCube(transform);*/
 
-    // --- Upper Arm (connected to shoulder) ---
+    //Upper Arm (connected to shoulder)
     glm::mat4 shoulderMatrix = glm::rotate(baseMatrix,  arm_joint[0], glm::vec3(1.0f, 0.0f, 0.0f));
     shoulderMatrix = glm::translate(shoulderMatrix, glm::vec3(0.0f, -0.25f, 0.0f));
-    glm::mat4 upperMatrix = glm::scale(shoulderMatrix, armScale[0]);  // Scale the upper arm
+    glm::mat4 upperMatrix = glm::scale(shoulderMatrix, armScale[0]);
     glColor3f(1, 0, 0);
-    drawUnitCube(upperMatrix);  // Draw upper arm
+    drawUnitCube(upperMatrix); 
     
-    // --- Forearm (connected to elbow) ---
+    //Forearm (connected to elbow)
     glm::mat4 elbowMatrix = glm::translate(shoulderMatrix, glm::vec3(0.0f, 0.0f, 1.0f));
     elbowMatrix = glm::translate(elbowMatrix, glm::vec3(0.0f, 0.25f, 0.0f)); 
     elbowMatrix = glm::rotate(elbowMatrix, arm_joint[1], glm::vec3(1.0f, 0.0f, 0.0f));
     elbowMatrix = glm::translate(elbowMatrix, glm::vec3(0.1f, -0.15f, 0.0f));
-    glm::mat4 forearmMatrix = glm::scale(elbowMatrix, armScale[1]);  // Scale the forearm
+    glm::mat4 forearmMatrix = glm::scale(elbowMatrix, armScale[1]);
     glColor3f(0, 1, 0);
-    drawUnitCube(forearmMatrix);  // Draw forearm
+    drawUnitCube(forearmMatrix);
 
+    //Hand (connected to wrist)
     glm::mat4 wristMatrix = glm::translate(elbowMatrix, glm::vec3(0.0f, 0.0f, 0.8f));
     wristMatrix = glm::translate(wristMatrix, glm::vec3(0.0f, 0.15f, 0.0f)); 
     wristMatrix = glm::rotate(wristMatrix, arm_joint[2], glm::vec3(1.0f, 0.0f, 0.0f)); 
     wristMatrix = glm::translate(wristMatrix, glm::vec3(-0.15f, -0.3f, 0.0f)); 
-    glm::mat4 handMatrix = glm::scale(wristMatrix, armScale[2]);  // Scale the forearm
+    glm::mat4 handMatrix = glm::scale(wristMatrix, armScale[2]);
     glColor3f(0, 0, 1);
     drawUnitCube(handMatrix);
-
-//ciao
-    // Produce a three-unit arm (upperarm, forearm, hand) making use of your function
-    // drawUnitCube to define each of them
-    // 1) Define 3 global variables that control the angles between the arm parts and add
-    //   cases to the keyboard function to control these values
-
-    // 2) Use these variables to define your arm.
-    //    Use glm::scale(Matrix, Vector) to achieve different arm lengths.
-    //    Use glm::rotate(Matrix, Angle, Vector) to correctly place the elements
-
-    // 3 Optional) make an animated snake out of these boxes
-    //(an arm with 10 joints that moves using the animate function)
-
 }
 
 void drawLight()
@@ -250,15 +244,26 @@ void drawLight()
     // 1) Draw a cube at the light's position lightPos using your drawUnitCube function.
     //    To make the light source bright, follow the drawCoordSystem function
     //    To deactivate the lighting temporarily and draw it in yellow.
-
     // 2) Make the light position controllable via the keyboard function
-
     // 3) Add normal information to all your faces of the previous functions
     //    and observe the shading after pressing 'L' to activate the lighting.
     //    You can use 'l' to turn it off again.
-
     // 4) OPTIONAL
     //    Draw a sphere (consisting of triangles) instead of a cube.
+
+    glDisable(GL_LIGHTING);
+    
+    // Set the color to yellow for the light cube
+    glColor3f(1.0f, 1.0f, 0.0f);
+
+    // Create a transformation matrix to position the light cube
+    glm::mat4 lightTransform = glm::translate(glm::mat4(1.0f), glm::vec3(lightPos));
+    lightTransform = glm::scale(lightTransform, glm::vec3(0.2f, 0.2f, 0.2f));
+    // Draw the light cube
+    drawUnitCube(lightTransform);
+
+    // Re-enable lighting after drawing the light cube
+    glEnable(GL_LIGHTING);
 
 }
 
@@ -268,13 +273,10 @@ void drawMesh()
     //    Each triangle is defined with 3 consecutive indices in the meshTriangles table.
     //    These indices correspond to vertices stored in the meshVertices table.
     //    Provide a function that draws these triangles.
-
     // 2) Compute the normals of these triangles
-
     // 3) Try computing a normal per vertex as the average of the adjacent face normals.
     //    Call glNormal3f with the corresponding values before each vertex.
     //    What do you observe with respect to the lighting?
-
     // 4) Try loading your own model (export it from Blender as a Wavefront obj) and replace the provided mesh file.
 
 }
