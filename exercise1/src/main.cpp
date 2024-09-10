@@ -152,14 +152,21 @@ void drawUnitFace(const glm::mat4& transformMatrix)
     glm::vec4 v2 = transformMatrix * glm::vec4(0, 1, 1, 1);
     glm::vec4 v3 = transformMatrix * glm::vec4(0, 0, 1, 1);
 
-    glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(v1 - v0), glm::vec3(v2 - v0)));
+    glm::vec3 normal = glm::normalize(glm::cross(glm::vec3(v2 - v0),glm::vec3(v3 - v1)));
+    glm::vec4 center = (v0 + v1 + v2 + v3) / 4.0f;
 
     glBegin(GL_QUADS);
     glNormal3f(normal.x, normal.y, normal.z);
-    glVertex3f(v0.x, v0.y, v0.z);  // Bottom-left
-    glVertex3f(v1.x, v1.y, v1.z);  // Top-left
-    glVertex3f(v2.x, v2.y, v2.z);  // Top-right
-    glVertex3f(v3.x, v3.y, v3.z);  // Bottom-right
+    glVertex3fv(glm::value_ptr(v0));  // Bottom-left
+    glVertex3fv(glm::value_ptr(v1));  // Top-left
+    glVertex3fv(glm::value_ptr(v2));  // Top-right
+    glVertex3fv(glm::value_ptr(v3));  // Bottom-right
+    glEnd();
+
+    
+    glBegin(GL_LINES);
+    glVertex3f(center.x, center.y, center.z);  // Punto di partenza (centro della faccia)
+    glVertex3f(center.x + normal.x, center.y + normal.y, center.z + normal.z);  // Direzione del vettore normale
     glEnd();
 }
 
@@ -205,7 +212,7 @@ void drawArm()
 
     glm::mat4 baseMatrix = glm::mat4(1.0f);
 
-    /*//Upper Arm (connected to shoulder)
+    /*//ISN'T IT THE SAME?
     glm::mat4 rotation = glm::rotate(baseMatrix,  arm_joint[0], glm::vec3(1.0f, 0.0f, 0.0f));
     glm::mat4 translation = glm::translate(baseMatrix, glm::vec3(0.0f, -0.25f, 0.0f));
     glm::mat4 scale = glm::scale(baseMatrix, armScale[0]);
@@ -251,20 +258,12 @@ void drawLight()
     // 4) OPTIONAL
     //    Draw a sphere (consisting of triangles) instead of a cube.
 
-    glDisable(GL_LIGHTING);
-    
-    // Set the color to yellow for the light cube
-    glColor3f(1.0f, 1.0f, 0.0f);
+    glm::mat4 baseMatrix = glm::mat4(1.0f);
+    glm::mat4 lightcube = glm::translate(baseMatrix, glm::vec3(lightPos.x-0.05f, lightPos.y-0.05f, lightPos.z-0.05f)); //centre the cube with the light's position
+    lightcube = glm::scale(lightcube, glm::vec3(0.1f, 0.1f, 0.1f));
 
-    // Create a transformation matrix to position the light cube
-    glm::mat4 lightTransform = glm::translate(glm::mat4(1.0f), glm::vec3(lightPos));
-    lightTransform = glm::scale(lightTransform, glm::vec3(0.2f, 0.2f, 0.2f));
-    // Draw the light cube
-    drawUnitCube(lightTransform);
-
-    // Re-enable lighting after drawing the light cube
-    glEnable(GL_LIGHTING);
-
+    glColor3f(1,1,0);
+    drawUnitCube(lightcube);
 }
 
 void drawMesh()
@@ -278,13 +277,22 @@ void drawMesh()
     //    Call glNormal3f with the corresponding values before each vertex.
     //    What do you observe with respect to the lighting?
     // 4) Try loading your own model (export it from Blender as a Wavefront obj) and replace the provided mesh file.
+    for(const auto& tri : mesh.triangles){
+        glColor3f(0,0,1);
+        glBegin(GL_TRIANGLES);
+        for(int i=0; i<3; i++){
+            glVertex3fv(glm::value_ptr(mesh.vertices[tri[i]].position));
+            glNormal3fv(glm::value_ptr(mesh.vertices[tri[i]].normal));
+        }
+        glEnd();
+    }
 
 }
 
 void display()
 {
     // set the light to the right position
-    //  glLightfv(GL_LIGHT0, GL_POSITION, glm::value_ptr(lightPos));
+    glLightfv(GL_LIGHT0, GL_POSITION, glm::value_ptr(lightPos));
     drawLight();
 
     switch (displayMode) {
@@ -303,6 +311,10 @@ void display()
     case DisplayModeType::ARM:
         drawCoordSystem();
         drawArm();
+        break;
+    case DisplayModeType::MESH:
+        drawCoordSystem();
+        drawMesh();
         break;
     default:
         break;
@@ -389,6 +401,32 @@ void keyboard(int key, int /* scancode */, int action, int /* mods */)
     }
     case GLFW_KEY_E: {
         arm_joint[2] -= 0.05f; // Decrement angle by 5 degrees
+        break;
+    }
+    case GLFW_KEY_Y: {
+        lightPos[0] += 0.02f; // Increment angle by 5 degrees
+        break;
+    }
+    case GLFW_KEY_H: {
+        lightPos[0] -= 0.02f; // Decrement angle by 5 degrees
+        break;
+    }
+    // Adjust elbow angle
+    case GLFW_KEY_U: {
+        lightPos[1] += 0.02f; // Increment angle by 5 degrees
+        break;
+    }
+    case GLFW_KEY_J: {
+        lightPos[1] -= 0.02f; // Decrement angle by 5 degrees
+        break;
+    }
+    // Adjust wrist angle
+    case GLFW_KEY_I: {
+        lightPos[2] += 0.02f; // Increment angle by 5 degrees
+        break;
+    }
+    case GLFW_KEY_K: {
+        lightPos[2] -= 0.02f; // Decrement angle by 5 degrees
         break;
     }
     default:
