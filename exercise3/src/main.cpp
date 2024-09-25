@@ -582,6 +582,17 @@ int main(int argc, char** argv)
 
                             // === SET YOUR DIFFUSE TOON UNIFORMS HERE ===
                             // Values that you may want to pass to the shader are stored in light, shadingData.
+                            // 1. Pass the light's position to the shader
+                            glUniform3fv(lambertShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                            // 2. Pass the light's color to the shader
+                            glUniform3fv(lambertShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                            // 3. Pass the diffuse reflection coefficient (kd) to the shader
+                            glUniform3fv(lambertShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
+
+                            glUniform1i(toonDiffuseShader.getUniformLocation("toonDiscretize"), shadingData.toonDiscretize);
+
                             render(toonDiffuseShader);
                         }
                         if (toonLightingSpecular) {
@@ -589,6 +600,25 @@ int main(int argc, char** argv)
 
                             // === SET YOUR SPECULAR TOON UNIFORMS HERE ===
                             // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+
+                            // 1. Pass the light's position to the shader
+                            glUniform3fv(toonSpecularShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                            // 2. Pass the light's color to the shader
+                            glUniform3fv(toonSpecularShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                            // 3. Pass the camera position to the shader
+                            glUniform3fv(toonSpecularShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                            // 4. Pass the specular reflection coefficient (ks) to the shader
+                            glUniform3fv(toonSpecularShader.getUniformLocation("ks"), 1, glm::value_ptr(shadingData.ks));
+
+                            // 5. Pass the shininess factor to the shader
+                            glUniform1f(toonSpecularShader.getUniformLocation("shininess"), shadingData.shininess);
+
+                            glUniform1f(toonDiffuseShader.getUniformLocation("toonSpecularTreshold"), shadingData.toonSpecularThreshold);
+
+
                             render(toonSpecularShader);
                         }
                     }
