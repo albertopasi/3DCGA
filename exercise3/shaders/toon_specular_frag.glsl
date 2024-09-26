@@ -7,7 +7,6 @@ uniform vec3 lightColor; // Color of the light
 uniform vec3 ks;         // Specular coefficient from shadingData
 uniform float shininess; // Shininess factor for specular highlights
 uniform float toonSpecularThreshold;
-
 // Output for on-screen color
 out vec4 outColor;
 
@@ -27,11 +26,11 @@ void main()
     // Calculate the Blinn-Phong specular component
     float specular = pow(max(dot(halfDir, norm), 0.0), shininess);
 
-    vec3 finalColor = lightColor * ks * specular;      // Combine specular with light color
-
-    if (finalColor[0] >= toonSpecularThreshold && finalColor[1] >= toonSpecularThreshold && finalColor[2] >= toonSpecularThreshold) {
-        outColor = vec4(1.0, 1.0, 1.0, 1.0); // Set pixel to white if above threshold
-    } else {
-        outColor = vec4(0.0, 0.0, 0.0, 1.0); // Set pixel to black if below threshold
+    if(specular >= toonSpecularThreshold){
+        outColor = vec4(1.0,1.0,1.0,1.0);
+    }else{
+        outColor = vec4(0.0, 0.0, 0.0, 1.0);    // Output the final color
     }
+
+                    
 }

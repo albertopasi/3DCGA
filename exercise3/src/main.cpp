@@ -616,7 +616,7 @@ int main(int argc, char** argv)
                             // 5. Pass the shininess factor to the shader
                             glUniform1f(toonSpecularShader.getUniformLocation("shininess"), shadingData.shininess);
 
-                            glUniform1f(toonDiffuseShader.getUniformLocation("toonSpecularTreshold"), shadingData.toonSpecularThreshold);
+                            glUniform1f(toonSpecularShader.getUniformLocation("toonSpecularThreshold"), shadingData.toonSpecularThreshold);
 
 
                             render(toonSpecularShader);
