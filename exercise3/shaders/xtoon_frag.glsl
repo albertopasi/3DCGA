@@ -21,6 +21,6 @@ void main()
     float lambertian = max(dot(normal, lightDir), 0.0);
     float distanceCameraToFrag = length(cameraPos - fragPos);
 
-    float distanceFactor = (distanceCameraToFrag) / 2.0;
+    float distanceFactor = (distanceCameraToFrag+10.0f);
     outColor = texture(texToon, vec2(lambertian, distanceCameraToFrag));
 }

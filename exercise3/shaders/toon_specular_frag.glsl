@@ -3,8 +3,6 @@
 // Global variables for lighting calculations
 uniform vec3 cameraPos;  // Position of the camera
 uniform vec3 lightPos;   // Position of the light
-uniform vec3 lightColor; // Color of the light
-uniform vec3 ks;         // Specular coefficient from shadingData
 uniform float shininess; // Shininess factor for specular highlights
 uniform float toonSpecularThreshold;
 // Output for on-screen color

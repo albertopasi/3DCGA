@@ -26,7 +26,7 @@ void main()
     float quantizedDiffuse = ceil(diffuseFactor * toonDiscretize) / toonDiscretize;
 
     // Final diffuse color using kd and lightColor
-    vec3 diffuseColor = kd * quantizedDiffuse; 
+    vec3 diffuseColor = kd * quantizedDiffuse * lightColor; 
  
     // Output the final color, with an alpha value of 1.0
     outColor = vec4(diffuseColor, 1.0);

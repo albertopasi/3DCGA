@@ -98,18 +98,14 @@ static glm::vec3 userInteractionSphere(const glm::vec3& selectedPos, const glm::
     glm::vec3 p1 = selectedPos + s1*dir;
     glm::vec3 p2 = selectedPos + s2*dir;
 
+    //std::cout<<(glm::distance(p1, camPos))<<"\n";
+    //std::cout<<(glm::distance(p2, camPos))<<"\n";
 
     if(glm::length(p1-camPos) < glm::length(p2-camPos)){
         return p1;
     }else{
         return p2;
     }
-
-
-
-
-
-
 }
 
 static glm::vec3 userInteractionShadow(const glm::vec3& selectedPos, const glm::vec3& selectedNormal, const glm::vec3& lightPos)
@@ -118,7 +114,9 @@ static glm::vec3 userInteractionShadow(const glm::vec3& selectedPos, const glm::
     //--- in this way, the shading boundary will be exactly at this location.
     // there are several ways to do this, choose one you deem appropriate given the current light position
     // no panic, I will not judge what solution you chose, as long as the above condition is met.
-    return glm::vec3(1, 0, 1);
+
+    glm::vec3 orth (selectedNormal[2], 0.0, -selectedNormal[0]);
+    return selectedPos - orth;
 }
 
 static glm::vec3 userInteractionSpecular(const glm::vec3& selectedPos, const glm::vec3& selectedNormal, const glm::vec3& lightPos, const glm::vec3& cameraPos)
@@ -127,7 +125,24 @@ static glm::vec3 userInteractionSpecular(const glm::vec3& selectedPos, const glm
     // please ensure also that the light is at a distance of 1 from selectedPos! If the camera is on the wrong side of the surface (normal pointing the other way),
     // then just return the original light position.
     // There is only ONE way of doing this!
-    return glm::vec3(0, 1, 1);
+
+    // Vector from the selected position to the camera
+    glm::vec3 viewDir = glm::normalize(cameraPos - selectedPos);
+    
+    // If the camera is on the wrong side of the surface, return original light position
+    if (glm::dot(viewDir, selectedNormal) < 0.0f) {
+        return lightPos;
+    }
+
+    // Reflection direction (view should align with this for specularity)
+    glm::vec3 reflectionDir = glm::normalize(glm::reflect(-viewDir, selectedNormal));
+    
+    // Set the new light position at a distance of 1 from the selected position
+    glm::vec3 newLightPos = selectedPos + reflectionDir;
+
+    //std::cout<<(glm::distance(newLightPos, selectedPos))<<"\n"; //distance 1
+
+    return newLightPos;
 }
 
 static size_t getClosestVertexIndex(const Mesh& mesh, const glm::vec3& pos);
@@ -621,13 +636,13 @@ int main(int argc, char** argv)
                             // === SET YOUR DIFFUSE TOON UNIFORMS HERE ===
                             // Values that you may want to pass to the shader are stored in light, shadingData.
                             // 1. Pass the light's position to the shader
-                            glUniform3fv(lambertShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+                            glUniform3fv(toonDiffuseShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
 
                             // 2. Pass the light's color to the shader
-                            glUniform3fv(lambertShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+                            glUniform3fv(toonDiffuseShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
 
                             // 3. Pass the diffuse reflection coefficient (kd) to the shader
-                            glUniform3fv(lambertShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
+                            glUniform3fv(toonDiffuseShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
 
                             glUniform1i(toonDiffuseShader.getUniformLocation("toonDiscretize"), shadingData.toonDiscretize);
 
@@ -642,14 +657,8 @@ int main(int argc, char** argv)
                             // 1. Pass the light's position to the shader
                             glUniform3fv(toonSpecularShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
 
-                            // 2. Pass the light's color to the shader
-                            glUniform3fv(toonSpecularShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
-
                             // 3. Pass the camera position to the shader
                             glUniform3fv(toonSpecularShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
-
-                            // 4. Pass the specular reflection coefficient (ks) to the shader
-                            glUniform3fv(toonSpecularShader.getUniformLocation("ks"), 1, glm::value_ptr(shadingData.ks));
 
                             // 5. Pass the shininess factor to the shader
                             glUniform1f(toonSpecularShader.getUniformLocation("shininess"), shadingData.shininess);
@@ -713,7 +722,7 @@ int main(int argc, char** argv)
         }
         if (!renderedSomething) {
             debugShader.bind();
-            glUniform3fv(debugShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
+            //glUniform3fv(debugShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
             render(debugShader);
         }
 
@@ -726,7 +735,9 @@ int main(int argc, char** argv)
             glPointSize(40.0f);
             glUniform4fv(lightShader.getUniformLocation("pos"), 1, glm::value_ptr(screenPos));
             glUniform3fv(lightShader.getUniformLocation("color"), 1, glm::value_ptr(color));
+            glBindVertexArray(vao);
             glDrawArrays(GL_POINTS, 0, 1);
+            glBindVertexArray(0);       
         }
         for (const Light& light : lights) {
             const glm::vec4 screenPos = mvp * glm::vec4(light.position, 1.0f);
@@ -735,7 +746,9 @@ int main(int argc, char** argv)
             glPointSize(10.0f);
             glUniform4fv(lightShader.getUniformLocation("pos"), 1, glm::value_ptr(screenPos));
             glUniform3fv(lightShader.getUniformLocation("color"), 1, glm::value_ptr(light.color));
+            glBindVertexArray(vao);
             glDrawArrays(GL_POINTS, 0, 1);
+            glBindVertexArray(0);       
         }
 
         // Present result to the screen.

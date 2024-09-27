@@ -6,7 +6,7 @@ uniform sampler2D texShadow;
 
 // scene uniforms
 uniform mat4 lightMVP;
-uniform vec3 lightPos = vec3(3, 3, 3);
+uniform vec3 lightPos;
 // config uniforms, use these to control the shader from UI
 uniform int samplingMode = 0;
 uniform int peelingMode = 0;

@@ -59,7 +59,11 @@ int main()
 {
     Window window { "Shadow Mapping", glm::ivec2(WIDTH, HEIGHT), OpenGLVersion::GL41 };
 
-    Camera camera { &window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+    std::vector<Camera> cameras {};
+    size_t selectedCameraIndex =0;
+    cameras.push_back(Camera{ &window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f)});
+    cameras.push_back(Camera{ &window, glm::vec3(-1.2f, 1.1f, 0.9f), -glm::vec3(-1.2f, 1.1f, 0.9f)});
+
     constexpr float fov = glm::pi<float>() / 4.0f;
     constexpr float aspect = static_cast<float>(WIDTH) / static_cast<float>(HEIGHT);
     const glm::mat4 mainProjectionMatrix = glm::perspective(fov, aspect, 0.1f, 30.0f);
@@ -74,8 +78,10 @@ int main()
 
         switch (key) {
         case GLFW_KEY_1:
+            selectedCameraIndex=0;
             break;
         case GLFW_KEY_2:
+            selectedCameraIndex=1;
             break;
         default:
             break;
@@ -210,6 +216,10 @@ int main()
         // Bind the shader
         mainShader.bind();
 
+        Camera& camera = cameras[selectedCameraIndex];
+        Camera& otherCamera = cameras[1 - selectedCameraIndex];
+
+
         camera.updateInput();
 
         const glm::mat4 mvp = mainProjectionMatrix * camera.viewMatrix(); // Assume model matrix is identity.
@@ -218,6 +228,7 @@ int main()
         // Set view position
         const glm::vec3 cameraPos = camera.cameraPos();
         //glUniform3fv(mainShader.getUniformLocation("viewPos"), 1, glm::value_ptr(cameraPos));
+        glUniform3fv(mainShader.getUniformLocation("lightPos"), 1, glm::value_ptr(otherCamera.cameraPos()));
 
         // .... HERE YOU MUST ADD THE CORRECT UNIFORMS FOR RENDERING THE MAIN IMAGE
         glUniform1i(mainShader.getUniformLocation("samplingMode"), samplingMode);
