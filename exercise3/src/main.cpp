@@ -72,12 +72,44 @@ struct Light {
 std::vector<Light> lights {};
 size_t selectedLightIndex = 0;
 
+#include <glm/glm.hpp>
+#include <cmath>
+
 static glm::vec3 userInteractionSphere(const glm::vec3& selectedPos, const glm::vec3& camPos)
 {
     // RETURN the new light position, defined as follows.
     // selectedPos is a location on the mesh. Use this location to place the light source to cover the location as seen from camPos.
     // Further, the light should be at a distance of 1.5 from the origin of the scene - in other words, located on a sphere of radius 1.5 around the origin.
-    return glm::vec3(1, 1, 1);
+
+    glm::vec3 Q = selectedPos;
+    glm::vec3 dir = normalize(selectedPos - camPos);
+    float a = glm::dot(dir,dir);
+    float b = 2.0f*glm::dot(dir,Q);
+    float c = glm::dot(Q,Q)-2.25f;
+    float d = (b*b)-(4.0f*a*c);
+
+    if(d<0){
+        return glm::vec3(0.0);
+    }
+
+    float s1 = (-b + sqrt(d))/(2.0f*a);
+    float s2 = (-b - sqrt(d))/(2.0f*a);
+
+    glm::vec3 p1 = selectedPos + s1*dir;
+    glm::vec3 p2 = selectedPos + s2*dir;
+
+
+    if(glm::length(p1-camPos) < glm::length(p2-camPos)){
+        return p1;
+    }else{
+        return p2;
+    }
+
+
+
+
+
+
 }
 
 static glm::vec3 userInteractionShadow(const glm::vec3& selectedPos, const glm::vec3& selectedNormal, const glm::vec3& lightPos)
@@ -180,7 +212,7 @@ void imgui()
     }
 
     // Dropdown for interaction mode
-    std::array interactionModeNames { "Shadow", "Sphere", "Specular" };
+    std::array interactionModeNames { "Sphere", "Shadow", "Specular" };
     int current_mode = static_cast<int>(interfaceLightPlacement);
     ImGui::Combo("User Interaction Mode", &current_mode, interactionModeNames.data(), interactionModeNames.size());
     interfaceLightPlacement = static_cast<LightPlacementValue>(current_mode);
@@ -572,10 +604,16 @@ int main(int argc, char** argv)
 
                         // === SET YOUR X-TOON UNIFORMS HERE ===
                         // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos and texToon.
+
                         glActiveTexture(GL_TEXTURE0);
                         glBindTexture(GL_TEXTURE_2D, texToon);
-                        glUniform1i(xToonShader.getUniformLocation("xxx"), 0); // Change xxx to the uniform name that you want to use.
+                            glUniform3fv(xToonShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+                            glUniform3fv(xToonShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                        glUniform1i(xToonShader.getUniformLocation("texToon"), 0); // Change xxx to the uniform name that you want to use.
                         render(xToonShader);
+
+
                     } else {
                         if (toonLightingDiffuse) {
                             toonDiffuseShader.bind();
@@ -675,7 +713,7 @@ int main(int argc, char** argv)
         }
         if (!renderedSomething) {
             debugShader.bind();
-            // glUniform3fv(debugShader.getUniformLocation("viewPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
+            glUniform3fv(debugShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
             render(debugShader);
         }
 
