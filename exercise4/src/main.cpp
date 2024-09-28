@@ -62,12 +62,18 @@ int main()
     std::vector<Camera> cameras {};
     size_t selectedCameraIndex =0;
     cameras.push_back(Camera{ &window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f)});
-    cameras.push_back(Camera{ &window, glm::vec3(-1.2f, 1.1f, 0.9f), -glm::vec3(-1.2f, 1.1f, 0.9f)});
+    cameras.push_back(Camera{ &window, glm::vec3(1.8f, 1.0f, 0.06f), -glm::vec3(1.8f, 1.0f, 0.06f)});
 
     constexpr float fov = glm::pi<float>() / 4.0f;
     constexpr float aspect = static_cast<float>(WIDTH) / static_cast<float>(HEIGHT);
     const glm::mat4 mainProjectionMatrix = glm::perspective(fov, aspect, 0.1f, 30.0f);
-
+    // Field of View of the light
+    // const float fovLight = 30.0f;
+    // const float spotlightCutOffAngle = glm::cos(glm::radians(fovLight / 2.0f));
+    // Directional light projectionMatrix (sunlight)
+    // const glm::mat4 directionalLightProjectionMatrix = glm::ortho<float>(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 20.0f);
+    // Point light or spotlight projectionMatrix 
+    // const glm::mat4 lightProjectionMatrix = glm::perspective(glm::radians(fovLight), aspect, 0.1f, 20.0f);
     // === Modify for exercise 1 ===
     // Key handle function
     window.registerKeyCallback([&](int key, int /* scancode */, int action, int /* mods */) {
@@ -79,9 +85,11 @@ int main()
         switch (key) {
         case GLFW_KEY_1:
             selectedCameraIndex=0;
+            //std::cout << cameras[selectedCameraIndex].cameraPos()[0] << " / " << cameras[selectedCameraIndex].cameraPos()[1] << " / " << cameras[selectedCameraIndex].cameraPos()[2] << std::endl;
             break;
         case GLFW_KEY_2:
             selectedCameraIndex=1;
+            //std::cout << cameras[selectedCameraIndex].cameraPos()[0] << " / " << cameras[selectedCameraIndex].cameraPos()[1] << " / " << cameras[selectedCameraIndex].cameraPos()[2] << std::endl;
             break;
         default:
             break;
@@ -113,7 +121,11 @@ int main()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Load mesh from disk.
-    const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/scene.obj"));
+    //const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/scene.obj"));
+
+    // Load mesh from disk.
+    const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/sceneWithBox.obj"));
+
 
     // Create Element(Index) Buffer Object and Vertex Buffer Objects.
     // Create Vertex Buffer Object and Index Buffer Objects.
@@ -182,61 +194,60 @@ int main()
         imgui();
 
         // === Stub code for you to fill in order to render the shadow map ===
-        {
-            // Bind the off-screen framebuffer
-            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        
+        // Bind the off-screen framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-            // Clear the shadow map and set needed options
-            glClearDepth(1.0);
-            glClear(GL_DEPTH_BUFFER_BIT);
-            glEnable(GL_DEPTH_TEST);
+        // Clear the shadow map and set needed options
+        glClearDepth(1.0);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
-            // Bind the shader
-            shadowShader.bind();
+        // Bind the shader
+        shadowShader.bind();
 
-            // Set viewport size
-            glViewport(0, 0, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT);
+        // Set viewport size
+        glViewport(0, 0, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT);
 
-            // .... HERE YOU MUST ADD THE CORRECT UNIFORMS FOR RENDERING THE SHADOW MAP
-            // pass samplingmode as uniform
+        // .... HERE YOU MUST ADD THE CORRECT UNIFORMS FOR RENDERING THE SHADOW MAP
+        // pass samplingmode as uniform
+        //glUniform1i(shadowShader.getUniformLocation("samplingMode"), samplingMode);
+        glm::mat4 lightMVP = mainProjectionMatrix * cameras[1-selectedCameraIndex].viewMatrix(); // Assume model matrix is identity.
+        glUniformMatrix4fv(shadowShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(lightMVP));
 
+        // Bind vertex data
+        glBindVertexArray(vao);
 
-            // Bind vertex data
-            glBindVertexArray(vao);
+        glVertexAttribPointer(shadowShader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
 
-            glVertexAttribPointer(shadowShader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        // Execute draw command
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.triangles.size() * 3), GL_UNSIGNED_INT, nullptr);
 
-            // Execute draw command
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.triangles.size() * 3), GL_UNSIGNED_INT, nullptr);
-
-            // Unbind the off-screen framebuffer
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
+        // Unbind the off-screen framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
 
         // Bind the shader
         mainShader.bind();
 
-        Camera& camera = cameras[selectedCameraIndex];
-        Camera& otherCamera = cameras[1 - selectedCameraIndex];
+        cameras[selectedCameraIndex].updateInput();
 
-
-        camera.updateInput();
-
-        const glm::mat4 mvp = mainProjectionMatrix * camera.viewMatrix(); // Assume model matrix is identity.
+        const glm::mat4 mvp = mainProjectionMatrix * cameras[selectedCameraIndex].viewMatrix(); // Assume model matrix is identity.
         glUniformMatrix4fv(mainShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 
         // Set view position
-        const glm::vec3 cameraPos = camera.cameraPos();
+        //const glm::vec3 cameraPos = cameras[selectedCameraIndex].cameraPos();
         //glUniform3fv(mainShader.getUniformLocation("viewPos"), 1, glm::value_ptr(cameraPos));
-        glUniform3fv(mainShader.getUniformLocation("lightPos"), 1, glm::value_ptr(otherCamera.cameraPos()));
+        glUniform3fv(mainShader.getUniformLocation("lightPos"), 1, glm::value_ptr(cameras[1 - selectedCameraIndex].cameraPos()));
 
         // .... HERE YOU MUST ADD THE CORRECT UNIFORMS FOR RENDERING THE MAIN IMAGE
+        glUniformMatrix4fv(mainShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
         glUniform1i(mainShader.getUniformLocation("samplingMode"), samplingMode);
         glUniform1i(mainShader.getUniformLocation("peelingMode"), peelingMode);
         glUniform1i(mainShader.getUniformLocation("lightMode"), lightMode);
         glUniform1i(mainShader.getUniformLocation("lightColorMode"), lightColorMode);
 
-
+        
         // Bind vertex data
         glBindVertexArray(vao);
         glVertexAttribPointer(mainShader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
@@ -247,6 +258,11 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texShadow);
         glUniform1i(mainShader.getUniformLocation("texShadow"), 0);
+
+        // Bind the shadow map to texture slot 0
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texLight);
+        glUniform1i(mainShader.getUniformLocation("texLight"), 1);
 
         // Set viewport size
         glViewport(0, 0, WIDTH, HEIGHT);
@@ -275,4 +291,3 @@ int main()
 
     return 0;
 }
-

@@ -1,0 +1,30 @@
+[mesh]
+path = "resources/dragon.obj"
+
+[material]
+kd = [0.5, 0.5, 0.5]
+ks = [0.5, 0.5, 0.5]
+shininess = 3.0
+toonDiscretize = 4.0
+toonSpecularThreshold = 0.49
+
+[lights]
+positions = [[0.4, 1.2, 0.2]]
+colors = [[0.9, 0.9, 0.9]]
+is_spotlight = [true]
+direction = [[0.707, 0.0, 0.707]]
+has_texture = [false]
+texture_path = ["resources/smiley.png"]
+
+
+[camera]
+lookAt = [0.0, 0.0, -1.0]
+rotations = [0.0, 0.0, 0.0]
+dist = 2.0
+fovy = 50.0
+
+[render_settings]
+diffuse_model = "debug" # or "lambert" or "toon" or "x-toon"
+specular_model = "none" # or "phong" or "blinn-phong" or "toon"
+shadows = true # or false
+pcf = true # or false
