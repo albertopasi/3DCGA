@@ -1,8 +1,0 @@
-# Hashes of file build rules.
-ee7ab6d08a4221eeaa994a9e02b99fde CMakeFiles/Master_Practical4_copy_shaders
-3fec63cb051d1ea5f6b8022136f25bc5 framework/third_party/glfw3/src/CMakeFiles/update_mappings
-a26a029998b97d18c17201d3a2ffd407 framework/third_party/glm/CMakeFiles/uninstall
-9db5b582d669100b7209e4821ac0483f shaders/shader_frag.glsl
-9236ba141db1161c90aa77f9545f1ba0 shaders/shader_vert.glsl
-9bda55b5edb8b3bec742aec80f2a4b8b shaders/shadow_frag.glsl
-da07c586f3169f2c3ebcce3e2dc22cae shaders/shadow_vert.glsl

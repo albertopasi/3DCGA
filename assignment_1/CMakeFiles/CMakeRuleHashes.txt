@@ -1,6 +1,0 @@
-# Hashes of file build rules.
-7ec9e20511a37aeff580cf4fd4224ac2 CMakeFiles/Master_Assignment1_P1_copy_shaders
-1d361e8e7461e1907cae7b40adf68165 framework/third_party/glfw3/src/CMakeFiles/update_mappings
-221ca811efa542c7ab471619093a9484 framework/third_party/glm/CMakeFiles/uninstall
-ff37a488487be779b59d5b2dd35a6969 shaders/debug_frag.glsl
-10da02d493eb2e13a16a902e958b3fda shaders/vertex.glsl
