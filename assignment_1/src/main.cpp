@@ -69,6 +69,26 @@ struct Light {
 std::vector<Light> lights {};
 size_t selectedLightIndex = 0;
 
+void resetLights()
+{
+    lights.clear();
+    lights.push_back(Light { glm::vec3(0, 0, 3), glm::vec3(1) });
+    selectedLightIndex = 0;
+}
+
+// Add a new light
+void addLight() {
+    lights.push_back(Light{glm::vec3(0.0, 0.0, 3.0), glm::vec3(1.0), false, glm::vec3(0,0,1), false }); // Add a default light
+    selectedLightIndex = lights.size() - 1; // Select the newly added light
+}
+
+// Remove the selected light
+void removeLight() {
+    if (!lights.empty() && lights.size() > 1) {
+        lights.erase(lights.begin() + selectedLightIndex);
+        selectedLightIndex = std::min(selectedLightIndex, lights.size() - 1); // Ensure valid index
+    }
+}
 
 void imgui()
 {
@@ -80,9 +100,94 @@ void imgui()
     ImGui::Begin("Final project part 1 : Modern Shading");
     ImGui::Text("Press \\ to show/hide this menu");
 
+    ImGui::Separator();
+    ImGui::Text("Material parameters");
+
+    // Color pickers for Kd and Ks
+    ImGui::ColorEdit3("Kd", &shadingData.kd[0]);
+    ImGui::ColorEdit3("Ks", &shadingData.ks[0]);
+    ImGui::SliderFloat("Shininess", &shadingData.shininess, 0.0f, 100.f);
+    ImGui::SliderInt("Toon Discretization", &shadingData.toonDiscretize, 1, 10);
+    ImGui::SliderFloat("Toon Specular Threshold", &shadingData.toonSpecularThreshold, 0.0f, 1.0f);
+
+    // ImGui::Separator();
+    // ImGui::Text("Shading modes");
+    // ImGui::Checkbox("0: Debug", &debug);
+    // ImGui::Checkbox("1: Diffuse Lighting", &diffuseLighting);
+    // ImGui::Checkbox("2: Phong Specular Lighting", &phongSpecularLighting);
+    // ImGui::Checkbox("3: Blinn-Phong Specular Lighting", &blinnPhongSpecularLighting);
+    // ImGui::Checkbox("4: Toon Lighting Diffuse", &toonLightingDiffuse);
+    // ImGui::Checkbox("5: Toon Lighting Specular", &toonLightingSpecular);
+    // ImGui::Checkbox("6: Toon X Lighting", &toonxLighting);
+
+    ImGui::Separator();
+    ImGui::Text("Lights");
+
+    // Display lights in scene
+    std::vector<std::string> itemStrings = {};
+    for (size_t i = 0; i < lights.size(); i++) {
+        auto string = "Light " + std::to_string(i);
+        itemStrings.push_back(string);
+    }
+
+    std::vector<const char*> itemCStrings = {};
+    for (const auto& string : itemStrings) {
+        itemCStrings.push_back(string.c_str());
+    }
+
+    int tempSelectedItem = static_cast<int>(selectedLightIndex);
+    if (ImGui::ListBox("Lights", &tempSelectedItem, itemCStrings.data(), (int) itemCStrings.size(), 4)) {
+        selectedLightIndex = static_cast<size_t>(tempSelectedItem);
+    }
+
+    // Add/Remove/Reset lights
+    if (ImGui::Button("Add Light")) {
+        addLight();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Remove Light")) {
+        removeLight();
+    }
+    if (ImGui::Button("Reset Lights")) {
+        resetLights();
+    }
+
+    if (!lights.empty()) {
+        Light& selectedLight = lights[selectedLightIndex];
+
+        // Position of the light
+        ImGui::DragFloat3("Position", &selectedLight.position[0], 0.1f);
+
+        // Color of the light
+        ImGui::ColorEdit3("Color", &selectedLight.color[0]);
+    }
+    
+    ImGui::Separator();
+    ImGui::Text("Render Settings");
+
+    // Dropdown for diffuse model selection
+    const char* diffuseModels[] = { "debug", "lambert", "toon", "x-toon" };
+    static int selectedDiffuseModel = 0;
+    ImGui::Combo("Diffuse Model", &selectedDiffuseModel, diffuseModels, IM_ARRAYSIZE(diffuseModels));
+    
+    // Dropdown for specular model selection
+    const char* specularModels[] = { "none", "phong", "blinn-phong", "toon" };
+    static int selectedSpecularModel = 0;
+    ImGui::Combo("Specular Model", &selectedSpecularModel, specularModels, IM_ARRAYSIZE(specularModels));
+
+    // Checkbox for shadows
+    static bool shadowsEnabled = true; // Initialize with true or false based on the config
+    ImGui::Checkbox("Shadows", &shadowsEnabled);
+
+    // Checkbox for PCF
+    static bool pcfEnabled = true; // Initialize with true or false based on the config
+    ImGui::Checkbox("PCF", &pcfEnabled);
+
     ImGui::End();
     ImGui::Render();
 }
+
+
 
 std::optional<glm::vec3> tomlArrayToVec3(const toml::array* array)
 {
