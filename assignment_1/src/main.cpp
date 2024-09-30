@@ -36,6 +36,32 @@ const int WIDTH = 1200;
 const int HEIGHT = 800;
 
 bool show_imgui = true;
+bool debug = true;
+bool diffuseLighting = false;
+bool phongSpecularLighting = false;
+bool blinnPhongSpecularLighting = false;
+bool toonLightingDiffuse = false;
+bool toonLightingSpecular = false;
+bool toonxLighting = false;
+
+bool do_pcf = false;
+bool do_shadows = false;
+
+enum class DiffuseModel {
+    debug=0,
+    lambert=1,
+    toon=2,
+    xtoon=3
+};
+enum class SpecularModel {
+    none=0,
+    phong=1,
+    blinnphong=2,
+    toon=3
+};
+DiffuseModel selectedDiffuseModel { DiffuseModel::debug };
+SpecularModel selectedSpecularModel { SpecularModel::none };
+
 
 struct {
     // Diffuse (Lambert)
@@ -68,11 +94,12 @@ struct Light {
 
 std::vector<Light> lights {};
 size_t selectedLightIndex = 0;
+std::vector<Light> defaultLights = {};
 
 void resetLights()
 {
     lights.clear();
-    lights.push_back(Light { glm::vec3(0, 0, 3), glm::vec3(1) });
+    lights = defaultLights;
     selectedLightIndex = 0;
 }
 
@@ -109,16 +136,6 @@ void imgui()
     ImGui::SliderFloat("Shininess", &shadingData.shininess, 0.0f, 100.f);
     ImGui::SliderInt("Toon Discretization", &shadingData.toonDiscretize, 1, 10);
     ImGui::SliderFloat("Toon Specular Threshold", &shadingData.toonSpecularThreshold, 0.0f, 1.0f);
-
-    // ImGui::Separator();
-    // ImGui::Text("Shading modes");
-    // ImGui::Checkbox("0: Debug", &debug);
-    // ImGui::Checkbox("1: Diffuse Lighting", &diffuseLighting);
-    // ImGui::Checkbox("2: Phong Specular Lighting", &phongSpecularLighting);
-    // ImGui::Checkbox("3: Blinn-Phong Specular Lighting", &blinnPhongSpecularLighting);
-    // ImGui::Checkbox("4: Toon Lighting Diffuse", &toonLightingDiffuse);
-    // ImGui::Checkbox("5: Toon Lighting Specular", &toonLightingSpecular);
-    // ImGui::Checkbox("6: Toon X Lighting", &toonxLighting);
 
     ImGui::Separator();
     ImGui::Text("Lights");
@@ -165,23 +182,75 @@ void imgui()
     ImGui::Separator();
     ImGui::Text("Render Settings");
 
-    // Dropdown for diffuse model selection
-    const char* diffuseModels[] = { "debug", "lambert", "toon", "x-toon" };
-    static int selectedDiffuseModel = 0;
-    ImGui::Combo("Diffuse Model", &selectedDiffuseModel, diffuseModels, IM_ARRAYSIZE(diffuseModels));
-    
-    // Dropdown for specular model selection
-    const char* specularModels[] = { "none", "phong", "blinn-phong", "toon" };
-    static int selectedSpecularModel = 0;
-    ImGui::Combo("Specular Model", &selectedSpecularModel, specularModels, IM_ARRAYSIZE(specularModels));
+    std::array diffuseModels { "debug", "lambert", "toon", "x-toon" };
+    int current_diffuse = static_cast<int>(selectedDiffuseModel);
+    ImGui::Combo("Diffuse Model", &current_diffuse, diffuseModels.data(), diffuseModels.size());
+    selectedDiffuseModel = static_cast<DiffuseModel>(current_diffuse);
 
-    // Checkbox for shadows
-    static bool shadowsEnabled = true; // Initialize with true or false based on the config
-    ImGui::Checkbox("Shadows", &shadowsEnabled);
+    // Update lighting modes based on selected diffuse model
+    switch (selectedDiffuseModel) {
+        case DiffuseModel::debug:
+            debug = true;
+            diffuseLighting = false;
+            toonLightingDiffuse = false;
+            toonxLighting = false;
+            break;
+        case DiffuseModel::lambert:
+            debug = false;
+            diffuseLighting = true;
+            toonLightingDiffuse = false;
+            toonxLighting = false;
+            break;
+        case DiffuseModel::toon:
+            debug = false;
+            diffuseLighting = false;
+            toonLightingDiffuse = true;
+            toonxLighting = false;
+            break;
+        case DiffuseModel::xtoon:
+            debug = false;
+            diffuseLighting = false;
+            toonLightingDiffuse = false;
+            toonxLighting = true;
+            break;
+    }
 
-    // Checkbox for PCF
-    static bool pcfEnabled = true; // Initialize with true or false based on the config
-    ImGui::Checkbox("PCF", &pcfEnabled);
+
+    std::array specularModels { "none", "phong", "blinn-phong", "toon" };
+    int current_specular = static_cast<int>(selectedSpecularModel);
+    ImGui::Combo("Specular Model", &current_specular, specularModels.data(), specularModels.size());
+    selectedSpecularModel = static_cast<SpecularModel>(current_specular);
+
+    // Update specular lighting modes based on selected specular model
+    switch (selectedSpecularModel) {
+        case SpecularModel::none:
+            phongSpecularLighting = false;
+            blinnPhongSpecularLighting = false;
+            toonLightingSpecular = false;
+            break;
+        case SpecularModel::phong:
+            phongSpecularLighting = true;
+            blinnPhongSpecularLighting = false;
+            toonLightingSpecular = false;
+            break;
+        case SpecularModel::blinnphong:
+            phongSpecularLighting = false;
+            blinnPhongSpecularLighting = true;
+            toonLightingSpecular = false;
+            break;
+        case SpecularModel::toon:
+            phongSpecularLighting = false;
+            blinnPhongSpecularLighting = false;
+            toonLightingSpecular = true;
+            break;
+    }
+
+    ImGui::Checkbox("Shadows", &do_shadows);
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!do_shadows);
+    ImGui::Checkbox("PCF", &do_pcf);
+    ImGui::EndDisabled();
+
 
     ImGui::End();
     ImGui::Render();
@@ -252,8 +321,10 @@ int main(int argc, char** argv)
             pixels = stbi_load(tex_path.c_str(), &width, &height, &sourceNumChannels, STBI_rgb);
         }
 
-        lights.emplace_back(Light { pos, color, is_spotlight, direction, has_texture, { width, height, sourceNumChannels, pixels } });
+        defaultLights.emplace_back(Light { pos, color, is_spotlight, direction, has_texture, { width, height, sourceNumChannels, pixels } });
     }
+    std::copy(defaultLights.begin(), defaultLights.end(), std::back_inserter(lights));
+
 
     // Create window
     Window window { "Shading", glm::ivec2(WIDTH, HEIGHT), OpenGLVersion::GL41 };
@@ -267,8 +338,55 @@ int main(int argc, char** argv)
 
     auto diffuse_model = config["render_settings"]["diffuse_model"].value<std::string>();
     auto specular_model = config["render_settings"]["specular_model"].value<std::string>();
-    bool do_pcf = config["render_settings"]["pcf"].value<bool>().value();
-    bool do_shadows = config["render_settings"]["shadows"].value<bool>().value();
+    do_pcf = config["render_settings"]["pcf"].value<bool>().value();
+    do_shadows = config["render_settings"]["shadows"].value<bool>().value();
+
+    std::cout << diffuse_model.value() << std::endl;
+
+    if (diffuse_model.value() == "debug") {
+        selectedDiffuseModel = DiffuseModel::debug;
+        debug = true;
+        diffuseLighting = false;
+        toonLightingDiffuse = false;
+        toonxLighting = false;
+    } else if (diffuse_model.value() == "lambert") {
+        selectedDiffuseModel = DiffuseModel::lambert;
+        debug = false;
+        diffuseLighting = true;
+        toonLightingDiffuse = false;
+        toonxLighting = false;
+    } else if (diffuse_model.value() == "toon") {
+        selectedDiffuseModel = DiffuseModel::toon;
+        debug = false;
+        diffuseLighting = false;
+        toonLightingDiffuse = true;
+        toonxLighting = false;
+    } else if (diffuse_model.value() == "x-toon") {
+        selectedDiffuseModel = DiffuseModel::xtoon;
+        debug = false;
+        diffuseLighting = false;
+        toonLightingDiffuse = false;
+        toonxLighting = true;
+    }
+
+
+    if (specular_model.value() == "none") {
+        phongSpecularLighting = false;
+        blinnPhongSpecularLighting = false;
+        toonLightingSpecular = false;
+    } else if (specular_model.value() == "phong") {
+        phongSpecularLighting = true;
+        blinnPhongSpecularLighting = false;
+        toonLightingSpecular = false;
+    } else if (specular_model.value() == "blinn-phong") {
+        phongSpecularLighting = false;
+        blinnPhongSpecularLighting = true;
+        toonLightingSpecular = false;   
+    } else if (specular_model.value() == "toon") {
+        phongSpecularLighting = false;
+        blinnPhongSpecularLighting = false;
+        toonLightingSpecular = true;   
+    }
 
     Trackball trackball { &window, glm::radians(fovY) };
     trackball.setCamera(look_at, rotations, dist);
@@ -276,10 +394,11 @@ int main(int argc, char** argv)
     // read mesh
     bool animated = config["mesh"]["animated"].value_or(false);
     auto mesh_path = std::string(RESOURCE_ROOT) + config["mesh"]["path"].value_or("resources/dragon.obj");
+    const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/scene.obj"));
 
     std::cout << mesh_path << std::endl;
 
-    const Mesh mesh = loadMesh(mesh_path)[0];
+    //const Mesh mesh = loadMesh(mesh_path)[0];
 
     window.registerKeyCallback([&](int key, int /* scancode */, int action, int /* mods */) {
         if (key == '\\' && action == GLFW_PRESS) {
@@ -291,7 +410,15 @@ int main(int argc, char** argv)
     });
 
     const Shader debugShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/debug_frag.glsl").build();
-   
+    const Shader lightShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/light_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/light_frag.glsl").build();
+    const Shader lambertShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/lambert_frag.glsl").build();
+    const Shader phongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/phong_frag.glsl").build();
+    const Shader blinnPhongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/blinn_phong_frag.glsl").build();
+    const Shader toonDiffuseShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/toon_diffuse_frag.glsl").build();
+    const Shader toonSpecularShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/toon_specular_frag.glsl").build();
+    const Shader xToonShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/xtoon_frag.glsl").build();
+
+    //
     // Create Vertex Buffer Object and Index Buffer Objects.
     GLuint vbo;
 
@@ -327,10 +454,35 @@ int main(int argc, char** argv)
 
     glBindVertexArray(0);
 
+
+    // Load image from disk to CPU memory.
+    int width, height, sourceNumChannels; // Number of channels in source image. pixels will always be the requested number of channels (3).
+    stbi_uc* pixels = stbi_load(RESOURCE_ROOT "resources/toon_map.png", &width, &height, &sourceNumChannels, STBI_rgb);
+
+    // Create a texture on the GPU with 3 channels with 8 bits each.
+    GLuint texToon;
+    glGenTextures(1, &texToon);
+    glBindTexture(GL_TEXTURE_2D, texToon);
+
+    // Set behavior for when texture coordinates are outside the [0, 1] range.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Set interpolation for texture sampling (GL_NEAREST for no interpolation).
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+    // Free the CPU memory after we copied the image to the GPU.
+    stbi_image_free(pixels);
+
+
+
     // Enable depth testing.
     glEnable(GL_DEPTH_TEST);
 
-    // Main loop.
+    /*// Main loop.
     while (!window.shouldClose()) {
         window.updateInput();
 
@@ -349,6 +501,7 @@ int main(int argc, char** argv)
         const glm::mat4 projection = trackball.projectionMatrix();
         const glm::mat4 mvp = projection * view * model;
 
+        bool renderedSomething = false;
         auto render = [&](const Shader &shader) {
 
             // Set the model/view/projection matrix that is used to transform the vertices in the vertex shader.
@@ -368,13 +521,383 @@ int main(int argc, char** argv)
             glBindVertexArray(0);
         };
 
-        debugShader.bind();
-        render(debugShader);
+
+
+
+
+
+
+
+
+            if (!debug) {
+                    // Draw mesh into depth buffer but disable color writes.
+                    glDepthMask(GL_TRUE);
+                    glDepthFunc(GL_LEQUAL);
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    debugShader.bind();
+                    render(debugShader);
+
+                    // Draw the mesh again for each light / shading model.
+                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Enable color writes.
+                    glDepthMask(GL_FALSE); // Disable depth writes.
+                    glDepthFunc(GL_EQUAL); // Only draw a pixel if it's depth matches the value stored in the depth buffer.
+                    glEnable(GL_BLEND); // Enable blending.
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive blending.
+
+                    for (const Light& light : lights) {
+                        renderedSomething = false;
+                        if (!renderedSomething) {
+                            if (toonxLighting) {
+                                xToonShader.bind();
+
+                                // === SET YOUR X-TOON UNIFORMS HERE ===
+                                // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos and texToon.
+
+                                glActiveTexture(GL_TEXTURE0);
+                                glBindTexture(GL_TEXTURE_2D, texToon);
+                                    glUniform3fv(xToonShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+                                    glUniform3fv(xToonShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                                glUniform1i(xToonShader.getUniformLocation("texToon"), 0); // Change xxx to the uniform name that you want to use.
+                                render(xToonShader);
+
+
+                            } else {
+                                if (toonLightingDiffuse) {
+                                    toonDiffuseShader.bind();
+
+                                    // === SET YOUR DIFFUSE TOON UNIFORMS HERE ===
+                                    // Values that you may want to pass to the shader are stored in light, shadingData.
+                                    // 1. Pass the light's position to the shader
+                                    glUniform3fv(toonDiffuseShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                                    // 2. Pass the light's color to the shader
+                                    glUniform3fv(toonDiffuseShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                                    // 3. Pass the diffuse reflection coefficient (kd) to the shader
+                                    glUniform3fv(toonDiffuseShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
+
+                                    glUniform1i(toonDiffuseShader.getUniformLocation("toonDiscretize"), shadingData.toonDiscretize);
+
+                                    render(toonDiffuseShader);
+                                }
+                                if (toonLightingSpecular) {
+                                    toonSpecularShader.bind();
+
+                                    // === SET YOUR SPECULAR TOON UNIFORMS HERE ===
+                                    // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+
+                                    // 1. Pass the light's position to the shader
+                                    glUniform3fv(toonSpecularShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                                    // 3. Pass the camera position to the shader
+                                    glUniform3fv(toonSpecularShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                                    // 5. Pass the shininess factor to the shader
+                                    glUniform1f(toonSpecularShader.getUniformLocation("shininess"), shadingData.shininess);
+
+                                    glUniform1f(toonSpecularShader.getUniformLocation("toonSpecularThreshold"), shadingData.toonSpecularThreshold);
+
+
+                                    render(toonSpecularShader);
+                                }
+                            }
+                        }
+                        if (!renderedSomething) {
+                            if (diffuseLighting) {
+                                lambertShader.bind();  // Bind the Lambert shader
+
+                                // === SET YOUR LAMBERT UNIFORMS HERE ===
+
+                                // 1. Pass the light's position to the shader
+                                glUniform3fv(lambertShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                                // 2. Pass the light's color to the shader
+                                glUniform3fv(lambertShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                                // 3. Pass the diffuse reflection coefficient (kd) to the shader
+                                glUniform3fv(lambertShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
+
+                                // Call the render function after setting the uniforms
+                                render(lambertShader);
+
+                            }
+                            if (phongSpecularLighting || blinnPhongSpecularLighting) {
+                                const Shader &shader = phongSpecularLighting ? phongShader : blinnPhongShader;
+                                shader.bind();
+
+                                    // === SET YOUR PHONG/BLINN PHONG UNIFORMS HERE ===
+                                    // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+                                    // 1. Pass the light's position to the shader
+                                    glUniform3fv(shader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                                    // 2. Pass the light's color to the shader
+                                    glUniform3fv(shader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                                    // 3. Pass the camera position to the shader
+                                    glUniform3fv(shader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                                    // 4. Pass the specular reflection coefficient (ks) to the shader
+                                    glUniform3fv(shader.getUniformLocation("ks"), 1, glm::value_ptr(shadingData.ks));
+
+                                    // 5. Pass the shininess factor to the shader
+                                    glUniform1f(shader.getUniformLocation("shininess"), shadingData.shininess);
+
+                                render(shader);
+                            }
+                        }
+                    }
+
+                    // Restore default depth test settings and disable blending.
+                    glDepthFunc(GL_LEQUAL);
+                    glDepthMask(GL_TRUE);
+                    glDisable(GL_BLEND);
+                }
+                if (!renderedSomething) {
+                    debugShader.bind();
+                    //glUniform3fv(debugShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
+                    render(debugShader);
+                }
+
+
+
+
+
+
+
+
+
+
+        // Draw lights as (square) points.
+        lightShader.bind();
+        {
+            const glm::vec4 screenPos = mvp * glm::vec4(lights[selectedLightIndex].position, 1.0f);
+            const glm::vec3 color { 1, 1, 0 };
+
+            glPointSize(40.0f);
+            glUniform4fv(lightShader.getUniformLocation("pos"), 1, glm::value_ptr(screenPos));
+            glUniform3fv(lightShader.getUniformLocation("color"), 1, glm::value_ptr(color));
+            glBindVertexArray(vao);
+            glDrawArrays(GL_POINTS, 0, 1);
+            glBindVertexArray(0);       
+        }
+        for (const Light& light : lights) {
+            const glm::vec4 screenPos = mvp * glm::vec4(light.position, 1.0f);
+            // const glm::vec3 color { 1, 0, 0 };
+
+            glPointSize(10.0f);
+            glUniform4fv(lightShader.getUniformLocation("pos"), 1, glm::value_ptr(screenPos));
+            glUniform3fv(lightShader.getUniformLocation("color"), 1, glm::value_ptr(light.color));
+            glBindVertexArray(vao);
+            glDrawArrays(GL_POINTS, 0, 1);
+            glBindVertexArray(0);       
+        }
+
 
 
         // Present result to the screen.
         window.swapBuffers();
+    }*/
+
+   // Main loop.
+    while (!window.shouldClose()) {
+        window.updateInput();
+
+        imgui();
+
+        // Clear the framebuffer to black and depth to maximum value (ranges from [-1.0 to +1.0]).
+        glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Set model/view/projection matrix.
+        const glm::vec3 cameraPos = trackball.position();
+        const glm::mat4 model { 1.0f };
+
+        const glm::mat4 view = trackball.viewMatrix();
+        const glm::mat4 projection = trackball.projectionMatrix();
+        const glm::mat4 mvp = projection * view * model;
+
+        bool renderedSomething = false;
+        auto render = [&](const Shader &shader) {
+            renderedSomething = true;
+
+            // Set the model/view/projection matrix that is used to transform the vertices in the vertex shader.
+            glUniformMatrix4fv(shader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+
+            // Bind vertex data.
+            glBindVertexArray(vao);
+
+            // We tell OpenGL what each vertex looks like and how they are mapped to the shader using the names
+            // NOTE: Usually this can be stored in the VAO, since the locations would be the same in all shaders by using the layout(location = ...) qualifier in the shaders, however this does not work on apple devices.
+            glVertexAttribPointer(shader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+            glVertexAttribPointer(shader.getAttributeLocation("normal"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+            // Execute draw command.
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.triangles.size()) * 3, GL_UNSIGNED_INT, nullptr);
+
+            glBindVertexArray(0);
+        };
+
+        if (!debug) {
+            // Draw mesh into depth buffer but disable color writes.
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LEQUAL);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            debugShader.bind();
+            render(debugShader);
+
+            // Draw the mesh again for each light / shading model.
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); // Enable color writes.
+            glDepthMask(GL_FALSE); // Disable depth writes.
+            glDepthFunc(GL_EQUAL); // Only draw a pixel if it's depth matches the value stored in the depth buffer.
+            glEnable(GL_BLEND); // Enable blending.
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive blending.
+
+            for (const Light& light : lights) {
+                renderedSomething = false;
+                if (!renderedSomething) {
+                    if (toonxLighting) {
+                        xToonShader.bind();
+
+                        // === SET YOUR X-TOON UNIFORMS HERE ===
+                        // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos and texToon.
+
+                        glActiveTexture(GL_TEXTURE0);
+                        glBindTexture(GL_TEXTURE_2D, texToon);
+                            glUniform3fv(xToonShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+                            glUniform3fv(xToonShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                        glUniform1i(xToonShader.getUniformLocation("texToon"), 0); // Change xxx to the uniform name that you want to use.
+                        render(xToonShader);
+
+
+                    } else {
+                        if (toonLightingDiffuse) {
+                            toonDiffuseShader.bind();
+
+                            // === SET YOUR DIFFUSE TOON UNIFORMS HERE ===
+                            // Values that you may want to pass to the shader are stored in light, shadingData.
+                            // 1. Pass the light's position to the shader
+                            glUniform3fv(toonDiffuseShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                            // 2. Pass the light's color to the shader
+                            glUniform3fv(toonDiffuseShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                            // 3. Pass the diffuse reflection coefficient (kd) to the shader
+                            glUniform3fv(toonDiffuseShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
+
+                            glUniform1i(toonDiffuseShader.getUniformLocation("toonDiscretize"), shadingData.toonDiscretize);
+
+                            render(toonDiffuseShader);
+                        }
+                        if (toonLightingSpecular) {
+                            toonSpecularShader.bind();
+
+                            // === SET YOUR SPECULAR TOON UNIFORMS HERE ===
+                            // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+
+                            // 1. Pass the light's position to the shader
+                            glUniform3fv(toonSpecularShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                            // 3. Pass the camera position to the shader
+                            glUniform3fv(toonSpecularShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                            // 5. Pass the shininess factor to the shader
+                            glUniform1f(toonSpecularShader.getUniformLocation("shininess"), shadingData.shininess);
+
+                            glUniform1f(toonSpecularShader.getUniformLocation("toonSpecularThreshold"), shadingData.toonSpecularThreshold);
+
+
+                            render(toonSpecularShader);
+                        }
+                    }
+                }
+                if (!renderedSomething) {
+                    if (diffuseLighting) {
+                        lambertShader.bind();  // Bind the Lambert shader
+
+                        // === SET YOUR LAMBERT UNIFORMS HERE ===
+
+                        // 1. Pass the light's position to the shader
+                        glUniform3fv(lambertShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                        // 2. Pass the light's color to the shader
+                        glUniform3fv(lambertShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                        // 3. Pass the diffuse reflection coefficient (kd) to the shader
+                        glUniform3fv(lambertShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
+
+                        // Call the render function after setting the uniforms
+                        render(lambertShader);
+
+                    }
+                    if (phongSpecularLighting || blinnPhongSpecularLighting) {
+                        const Shader &shader = phongSpecularLighting ? phongShader : blinnPhongShader;
+                        shader.bind();
+
+                            // === SET YOUR PHONG/BLINN PHONG UNIFORMS HERE ===
+                            // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+                            // 1. Pass the light's position to the shader
+                            glUniform3fv(shader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
+
+                            // 2. Pass the light's color to the shader
+                            glUniform3fv(shader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
+
+                            // 3. Pass the camera position to the shader
+                            glUniform3fv(shader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
+
+                            // 4. Pass the specular reflection coefficient (ks) to the shader
+                            glUniform3fv(shader.getUniformLocation("ks"), 1, glm::value_ptr(shadingData.ks));
+
+                            // 5. Pass the shininess factor to the shader
+                            glUniform1f(shader.getUniformLocation("shininess"), shadingData.shininess);
+
+                        render(shader);
+                    }
+                }
+            }
+
+            // Restore default depth test settings and disable blending.
+            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+        }
+        if (!renderedSomething) {
+            debugShader.bind();
+            //glUniform3fv(debugShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
+            render(debugShader);
+        }
+
+        // Draw lights as (square) points.
+        lightShader.bind();
+        {
+            const glm::vec4 screenPos = mvp * glm::vec4(lights[selectedLightIndex].position, 1.0f);
+            const glm::vec3 color { 1, 1, 0 };
+
+            glPointSize(40.0f);
+            glUniform4fv(lightShader.getUniformLocation("pos"), 1, glm::value_ptr(screenPos));
+            glUniform3fv(lightShader.getUniformLocation("color"), 1, glm::value_ptr(color));
+            glBindVertexArray(vao);
+            glDrawArrays(GL_POINTS, 0, 1);
+            glBindVertexArray(0);       
+        }
+        for (const Light& light : lights) {
+            const glm::vec4 screenPos = mvp * glm::vec4(light.position, 1.0f);
+            // const glm::vec3 color { 1, 0, 0 };
+
+            glPointSize(10.0f);
+            glUniform4fv(lightShader.getUniformLocation("pos"), 1, glm::value_ptr(screenPos));
+            glUniform3fv(lightShader.getUniformLocation("color"), 1, glm::value_ptr(light.color));
+            glBindVertexArray(vao);
+            glDrawArrays(GL_POINTS, 0, 1);
+            glBindVertexArray(0);       
+        }
+
+        // Present result to the screen.
+        window.swapBuffers();
     }
+
 
     // Be a nice citizen and clean up after yourself.
     glDeleteBuffers(1, &vbo);
