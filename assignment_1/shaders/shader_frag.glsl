@@ -45,8 +45,8 @@ void main()
     // Shadow map coordinate corresponding to this fragment
     vec2 shadowMapCoord = fragLightCoord.xy;
 
-    // float bias = 0.0005;
-    float bias = max(0.0001 * (dot(normal, lightDir)), 0.00025);
+    float bias = 0.0001;
+    //float bias = max(0.0001 * (dot(normal, lightDir)), 0.00005);
     float visibility = 1.0;
 
     if(lightMode != 0){
@@ -54,7 +54,8 @@ void main()
         vec2 centre = vec2(0.5, 0.5);
         float dist = distance(shadowMapCoord, centre);
         visibility = -2.0 * dist +1.0;
-    }else if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
+    }
+    if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
         visibility = 0.0;
     }
 
@@ -89,9 +90,11 @@ void main()
         float shadowMapDepth = texture(texShadow, shadowMapCoord).x;
 
         if(shadowMapDepth < fragLightDepth - bias){
-            visibility = 0.0;
+            visibility = 0.20;
         }
     }
-    
+    if(fragLightCoord.x < -1.0 || fragLightCoord.x > 1.0 || fragLightCoord.y < -1.0 || fragLightCoord.y > 1.0){
+        visibility = 0.0;
+    }
     outColor = vec4(vec3( lightColor * visibility * max(dot(fragNormal, lightDir), 0.0)), 1.0);
 }
