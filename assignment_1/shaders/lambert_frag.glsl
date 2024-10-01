@@ -53,8 +53,8 @@ void main()
         // Shadow map coordinate corresponding to this fragment
         vec2 shadowMapCoord = fragLightCoord.xy;
 
-        float bias = 0.0001;
-        //float bias = max(0.0001 * (dot(normal, lightDir)), 0.00005);
+        float bias = 0.0005;
+        //float bias = max(0.0005 * max(dot(normal, lightDir), 0.0), 0.0005);
 
         if(lightMode != 0){
             //spotlight mode
@@ -81,7 +81,7 @@ void main()
                     vec2 offset = vec2(x, y) * texelSize;
                     float shadowMapDepth = texture(texShadow, shadowMapCoord + offset).x;
                     if(shadowMapDepth < fragLightDepth - bias){
-                        shadowSum += 0.0;
+                        shadowSum += 0.5;
                     }else{
                         shadowSum += 1.0;
                     }
@@ -98,7 +98,7 @@ void main()
         }
 
         if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
-            visibility = 0.5;
+            visibility = 0.0;
         }
     }
     

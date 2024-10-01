@@ -70,8 +70,6 @@ void main()
             vec2 centre = vec2(0.5, 0.5);
             float dist = distance(shadowMapCoord, centre);
             visibility = -2.0 * dist +1.0;
-        }else if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
-            visibility = 0.0;
         }
 
         if(lightColorMode != 0){
@@ -106,6 +104,9 @@ void main()
             if(shadowMapDepth < fragLightDepth - bias){
                 visibility = 0.20;
             }
+        }
+        if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
+            visibility = 0.0;
         }
     }
     

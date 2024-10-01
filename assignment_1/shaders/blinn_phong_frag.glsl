@@ -66,9 +66,7 @@ void main()
             float dist = distance(shadowMapCoord, centre);
             visibility = -2.0 * dist +1.0;
         }
-        if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
-            visibility = 0.0;
-        }
+        
 
         if(lightColorMode != 0){
             color = texture(texLight, shadowMapCoord).xyz;
@@ -103,7 +101,7 @@ void main()
                 visibility = 0.20;
             }
         }
-        if(fragLightCoord.x < -1.0 || fragLightCoord.x > 1.0 || fragLightCoord.y < -1.0 || fragLightCoord.y > 1.0){
+        if(shadowMapCoord.x < 0.0 || shadowMapCoord.x > 1.0 || shadowMapCoord.y < 0.0 || shadowMapCoord.y > 1.0){
             visibility = 0.0;
         }
     }
