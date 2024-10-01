@@ -28,7 +28,7 @@ void main()
     // // Output the normal as color.
     vec3 lightDir = normalize(lightPos - fragPos);
 
-    vec3 normal = fragNormal;
+    vec3 normal = normalize(fragNormal);
 
     vec4 fragLightCoord = lightMVP * vec4(fragPos, 1.0);
 
@@ -45,7 +45,8 @@ void main()
     // Shadow map coordinate corresponding to this fragment
     vec2 shadowMapCoord = fragLightCoord.xy;
 
-    float bias = 0.00001;
+    // float bias = 0.0005;
+    float bias = max(0.0001 * (dot(normal, lightDir)), 0.00025);
     float visibility = 1.0;
 
     if(lightMode != 0){

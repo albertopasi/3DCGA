@@ -450,8 +450,8 @@ int main(int argc, char** argv)
     glBindVertexArray(0);
 
     GLuint texShadow;
-    const int SHADOWTEX_WIDTH = 1024;
-    const int SHADOWTEX_HEIGHT = 1024;
+    const int SHADOWTEX_WIDTH = 4096;
+    const int SHADOWTEX_HEIGHT = 4096;
     glGenTextures(1, &texShadow);
     glBindTexture(GL_TEXTURE_2D, texShadow);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -521,21 +521,39 @@ int main(int argc, char** argv)
 
 
 
-        const glm::mat4 lightView = glm::lookAt(lights[0].position, glm::vec3(0.0), glm::vec3(0.0, 1.0, 0.0));
-        glm::mat4 lightMVP;
-        //if(lights[0].is_spotlight){
-            constexpr float fov = glm::pi<float>() / 4.0f;
-            const float aspectRatio = static_cast<float>(window.getWindowSize().x) / static_cast<float>(window.getWindowSize().y);
-            const glm::mat4 perspLightProjectionMatrix = glm::perspective(fov, aspectRatio, 0.01f, 30.0f);
-            lightMVP = projection * lightView;
+        // const glm::mat4 lightView = glm::lookAt(lights[0].position, glm::vec3(0.0), glm::vec3(0.0, 1.0, 0.0));
+        // glm::mat4 lightMVP;
+        // //if(lights[0].is_spotlight){
+        //     constexpr float fov = glm::pi<float>() / 4.0f;
+        //     const float aspectRatio = static_cast<float>(window.getWindowSize().x) / static_cast<float>(window.getWindowSize().y);
+        //     const glm::mat4 perspLightProjectionMatrix = glm::perspective(fov, aspectRatio, 0.01f, 30.0f);
+        //     lightMVP = projection * lightView;
         // }else{
             // const glm::mat4 orthoLightProjectionMatrix = glm::ortho<float>(-10, 10, -10, 10, -10, 20);
             // lightMVP = orthoLightProjectionMatrix * lightView;
         // }
+        glm::vec3 lightPosition = lights[0].position;  // posizione della luce
+        glm::vec3 lightTarget = glm::vec3(0.0f, 0.0f, 0.0f);  // dove guarda la luce (solitamente verso il centro della scena)
+        glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);  // vettore "up", solitamente l'asse Y
+
+        glm::mat4 lightViewMatrix = glm::lookAt(lightPosition, lightTarget, upVector);
 
 
 
+        float orthoLeft = -10.0f;
+        float orthoRight = 10.0f;
+        float orthoBottom = -10.0f;
+        float orthoTop = 10.0f;
+        float nearPlane = 1.0f;
+        float farPlane = 100.0f;
 
+        glm::mat4 lightProjectionMatrix = glm::ortho(orthoLeft, orthoRight, orthoBottom, orthoTop, nearPlane, farPlane);
+
+
+
+        glm::mat4 modelMatrix = glm::mat4(1.0f);  // Matrice del modello (può essere diversa per ogni oggetto)
+
+        glm::mat4 lightMVP = lightProjectionMatrix * lightViewMatrix * modelMatrix;
 
 
 
@@ -587,6 +605,7 @@ int main(int argc, char** argv)
         glUniformMatrix4fv(mainShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
         glUniform3fv(mainShader.getUniformLocation("lightPos"), 1, glm::value_ptr(lights[0].position));
         //glUniform3fv(mainShader.getUniformLocation("lightColor"), 1, glm::value_ptr(lights[0].color));
+        
 
         glBindVertexArray(vao);
         glVertexAttribPointer(mainShader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
