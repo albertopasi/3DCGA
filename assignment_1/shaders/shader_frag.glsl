@@ -45,7 +45,7 @@ void main()
     // Shadow map coordinate corresponding to this fragment
     vec2 shadowMapCoord = fragLightCoord.xy;
 
-    float bias = 0.0001;
+    float bias = 0.00001;
     float visibility = 1.0;
 
     if(lightMode != 0){

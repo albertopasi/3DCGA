@@ -46,6 +46,9 @@ bool toonxLighting = false;
 
 bool do_pcf = false;
 bool do_shadows = false;
+int samplingMode = 0;
+int lightMode = 0;
+int lightColorMode = 0;
 
 enum class DiffuseModel {
     debug=0,
@@ -388,7 +391,8 @@ int main(int argc, char** argv)
 
     std::cout << mesh_path << std::endl;
 
-    const Mesh mesh = loadMesh(mesh_path)[0];
+    //const Mesh mesh = loadMesh(mesh_path)[0];
+    const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/scene.obj"));
 
     window.registerKeyCallback([&](int key, int /* scancode */, int action, int /* mods */) {
         if (key == '\\' && action == GLFW_PRESS) {
@@ -407,6 +411,8 @@ int main(int argc, char** argv)
     const Shader toonDiffuseShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/toon_diffuse_frag.glsl").build();
     const Shader toonSpecularShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/toon_specular_frag.glsl").build();
     const Shader xToonShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/xtoon_frag.glsl").build();
+    const Shader mainShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/shader_frag.glsl").build();
+    const Shader shadowShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/shadow_vert.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/shadow_frag.glsl").build();
 
     // Create Vertex Buffer Object and Index Buffer Objects.
     GLuint vbo;
@@ -443,12 +449,37 @@ int main(int argc, char** argv)
 
     glBindVertexArray(0);
 
+    GLuint texShadow;
+    const int SHADOWTEX_WIDTH = 1024;
+    const int SHADOWTEX_HEIGHT = 1024;
+    glGenTextures(1, &texShadow);
+    glBindTexture(GL_TEXTURE_2D, texShadow);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
+    // Set behaviour for when texture coordinates are outside the [0, 1] range.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Set interpolation for texture sampling (GL_NEAREST for no interpolation).
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // === Create framebuffer for extra texture ===
+    GLuint framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texShadow, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindVertexArray(0);
     // Load image from disk to CPU memory.
     int width, height, sourceNumChannels; // Number of channels in source image. pixels will always be the requested number of channels (3).
     stbi_uc* pixels = stbi_load(RESOURCE_ROOT "resources/toon_map.png", &width, &height, &sourceNumChannels, STBI_rgb);
 
+
     // Create a texture on the GPU with 3 channels with 8 bits each.
+    
     GLuint texToon;
     glGenTextures(1, &texToon);
     glBindTexture(GL_TEXTURE_2D, texToon);
@@ -488,6 +519,27 @@ int main(int argc, char** argv)
         const glm::mat4 projection = trackball.projectionMatrix();
         const glm::mat4 mvp = projection * view * model;
 
+
+
+        const glm::mat4 lightView = glm::lookAt(lights[0].position, glm::vec3(0.0), glm::vec3(0.0, 1.0, 0.0));
+        glm::mat4 lightMVP;
+        //if(lights[0].is_spotlight){
+            constexpr float fov = glm::pi<float>() / 4.0f;
+            const float aspectRatio = static_cast<float>(window.getWindowSize().x) / static_cast<float>(window.getWindowSize().y);
+            const glm::mat4 perspLightProjectionMatrix = glm::perspective(fov, aspectRatio, 0.01f, 30.0f);
+            lightMVP = projection * lightView;
+        // }else{
+            // const glm::mat4 orthoLightProjectionMatrix = glm::ortho<float>(-10, 10, -10, 10, -10, 20);
+            // lightMVP = orthoLightProjectionMatrix * lightView;
+        // }
+
+
+
+
+
+
+
+
         bool renderedSomething = false;
         auto render = [&](const Shader &shader) {
             renderedSomething = true;
@@ -508,6 +560,51 @@ int main(int argc, char** argv)
 
             glBindVertexArray(0);
         };
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glClearDepth(1.0);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+
+        shadowShader.bind();
+        glViewport(0, 0, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT);
+
+        glUniformMatrix4fv(shadowShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(lightMVP));
+
+        glBindVertexArray(vao);
+
+        glVertexAttribPointer(shadowShader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+
+        // Execute draw command
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.triangles.size() * 3), GL_UNSIGNED_INT, nullptr);
+
+        // Unbind the off-screen framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        mainShader.bind();
+        glUniformMatrix4fv(mainShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniformMatrix4fv(mainShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
+        glUniform3fv(mainShader.getUniformLocation("lightPos"), 1, glm::value_ptr(lights[0].position));
+        //glUniform3fv(mainShader.getUniformLocation("lightColor"), 1, glm::value_ptr(lights[0].color));
+
+        glBindVertexArray(vao);
+        glVertexAttribPointer(mainShader.getAttributeLocation("pos"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        glVertexAttribPointer(mainShader.getAttributeLocation("normal"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texShadow);
+        glUniform1i(mainShader.getUniformLocation("texShadow"), 0);
+        
+        glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+
+        glClearDepth(1.0);
+        glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+        
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.triangles.size() * 3), GL_UNSIGNED_INT, nullptr);
 
         if (!debug) {
             // Draw mesh into depth buffer but disable color writes.
