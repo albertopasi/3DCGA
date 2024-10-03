@@ -20,7 +20,7 @@ texture_path = ["resources/smiley.png"]
 [camera]
 lookAt = [0.0, 0.0, -1.0]
 rotations = [0.0, 0.0, 0.0]
-dist = 2.0
+dist = 1.0
 fovy = 50.0
 
 [render_settings]
