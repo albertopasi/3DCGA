@@ -438,8 +438,8 @@ int main(int argc, char** argv)
     const Shader toonSpecularShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/toon_specular_frag.glsl").build();
     const Shader xToonShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/xtoon_frag.glsl").build();
     const Shader shadowShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/shadow_vert.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/shadow_frag.glsl").build();
-    // const Shader quadShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/quad_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/quad_frag.glsl").build();
-    // const Shader depthPeelingShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/depth_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/depth_frag.glsl").build();
+    const Shader quadShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/quad_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/quad_frag.glsl").build();
+    const Shader depthPeelingShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/depth_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/depth_frag.glsl").build();
     
     // Create Vertex Buffer Object and Index Buffer Objects.
     // GLuint vbo;
@@ -589,84 +589,112 @@ int main(int argc, char** argv)
         const glm::mat4 mvp = projection * view * model;
 
         if(scene){
-            // float quadVertices[] = {
-            //     // Posizioni      // TexCoord       //Color
-            //     -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 0.5f,   // Vertice in alto a sinistra
-            //     0.5f, -0.5f, 0.0f,  1.0f, 0.0f,    1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in basso a destra
-            //     -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,    1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in basso a sinistra
+            float quadVertices[] = {
+                // Posizioni           //Color
+                -0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,   // Vertice in alto a sinistra
+                 0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in basso a destra
+                -0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in basso a sinistra
 
-            //     -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,    1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in alto a sinistra
-            //     0.5f,  0.5f, 0.0f,  1.0f, 1.0f,    1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in alto a destra
-            //     0.5f, -0.5f, 0.0f,  1.0f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,   // Vertice in basso a destra
+                -0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in alto a sinistra
+                0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in alto a destra
+                0.5f, -0.5f, 0.0f,      1.0f, 0.0f, 0.0f, 0.5f,   // Vertice in basso a destra
 
-            //     -0.5f,  0.5f, -0.0f,  0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 0.5f,   // Vertice in alto a sinistra
-            //     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in basso a destra
-            //     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in basso a sinistra
-
-            //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in alto a sinistra
-            //     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in alto a destra
-            //     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,     0.0f, 1.0f, 0.0f, 0.5f,   // Vertice in basso a destra
-            // };
-            // GLuint depthFBO[2];
-            // GLuint depthTexture[2];
-            // GLuint colorTexture[2];
-            
-            // glGenFramebuffers(2, depthFBO);
-            // glGenTextures(2, depthTexture);
-            // glGenTextures(2, colorTexture);
-
-            // for (int i = 0; i < 2; ++i) {
-            //     glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[i]);
+                -0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f, 0.5f,   // Vertice in alto a sinistra
+                0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in basso a destra
+                -0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in basso a sinistra
                 
-            //     glBindTexture(GL_TEXTURE_2D, depthTexture[i]);
-            //     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, window.getWindowSize().x, window.getWindowSize().y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            //     glBindTexture(GL_TEXTURE_2D, 0);
+                -0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in alto a sinistra
+                0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in alto a destra
+                0.5f, -0.5f, -0.5f,     0.0f, 1.0f, 0.0f, 0.5f,   // Vertice in basso a destra
+            };
+            GLuint depthFBO[2];
+            GLuint depthTexture[2];
+            GLuint colorTexture[2];
+            
+            glGenFramebuffers(2, depthFBO);
+            glGenTextures(2, depthTexture);
+            glGenTextures(2, colorTexture);
 
-            //     glBindTexture(GL_TEXTURE_2D, colorTexture[i]);
-            //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window.getWindowSize().x, window.getWindowSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            //     glBindTexture(GL_TEXTURE_2D, 0);
+            for (int i = 0; i < 2; ++i) {
+                glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[i]);
+                
+                glBindTexture(GL_TEXTURE_2D, depthTexture[i]);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, window.getWindowSize().x, window.getWindowSize().y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture[i], 0);
-            //     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture[i], 0);
+                glBindTexture(GL_TEXTURE_2D, colorTexture[i]);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window.getWindowSize().x, window.getWindowSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            //     // glDrawBuffer(GL_NONE); // Solo profondità
-            //     // glReadBuffer(GL_NONE);
-            //     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            //         std::cerr << "Errore nella creazione del framebuffer per Depth Peeling" << std::endl;
-            //     }
-            //     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            // }
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture[i], 0);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture[i], 0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+
+                // glDrawBuffer(GL_NONE); // Solo profondità
+                // glReadBuffer(GL_NONE);
+                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+                    std::cerr << "Errore nella creazione del framebuffer per Depth Peeling" << std::endl;
+                }
+                // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            }
 
 
-            // GLuint VAO, VBO;
-            // glGenVertexArrays(1, &VAO);
-            // glGenBuffers(1, &VBO);
+            GLuint VAO, VBO;
+            glGenVertexArrays(1, &VAO);
+            glGenBuffers(1, &VBO);
 
-            // glBindVertexArray(VAO);
-            // glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            // glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+            glBindVertexArray(VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
 
-            // // Attribuzione delle posizioni dei vertici
-            // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
-            // glEnableVertexAttribArray(0);
+            // Attribuzione delle posizioni dei vertici
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
 
-            // // Attribuzione delle coordinate texture
-            // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
-            // glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
 
-            // glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(5 * sizeof(float)));
-            // glEnableVertexAttribArray(2);
+            glBindVertexArray(0);
 
-            // glBindVertexArray(0);
+            glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[0]);
+            glClearDepth(1.0);
+            glClearColor(0.0, 0.0, 0.0, 0.0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDisable(GL_BLEND);
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_TRUE);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            depthPeelingShader.bind();
+            glUniformMatrix4fv(depthPeelingShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+            glUniform1i(depthPeelingShader.getUniformLocation("peel"), 0);
+            glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+            glBindVertexArray(VAO);
+            glDrawArrays(GL_TRIANGLES, 0, 12);
+            glBindVertexArray(0);
 
+            // glEnable(GL_DEPTH_TEST);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glClearDepth(1.0);
+            glClearColor(0.0, 0.0, 0.0, 0.0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            quadShader.bind();
+            glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, colorTexture[0]);
+            glUniform1i(quadShader.getUniformLocation("prevColorTex"), 0);
+            glBindVertexArray(VAO);
+            glDrawArrays(GL_TRIANGLES, 0, 12);
+            glBindVertexArray(0);
+            //glDisable(GL_DEPTH_TEST);
+
+            // glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[0]);
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // //glDisable(GL_DEPTH_TEST);
 
@@ -695,14 +723,15 @@ int main(int argc, char** argv)
             //     // }
                 
 
-            //     if (pass > 0) {  // Nel primo passaggio non c'è una texture di profondità precedente
-            //         glDepthFunc(GL_GREATER);
-            //         glActiveTexture(GL_TEXTURE0);
-            //         glBindTexture(GL_TEXTURE_2D, depthTexture[prevFBO]);
-            //         glEnable(GL_DEPTH_TEST);
-            //         // glActiveTexture(GL_TEXTURE1);
-            //         // glBindTexture(GL_TEXTURE_2D, colorTexture[prevFBO]);
-            //     }
+            //     // if (pass > 0) {  // Nel primo passaggio non c'è una texture di profondità precedente
+            //     //     glDepthFunc(GL_GREATER);
+            //     //     glActiveTexture(GL_TEXTURE0);
+            //     //     glBindTexture(GL_TEXTURE_2D, depthTexture[prevFBO]);
+            //     //     glEnable(GL_DEPTH_TEST);
+            //     //     // glActiveTexture(GL_TEXTURE1);
+            //     //     // glBindTexture(GL_TEXTURE_2D, colorTexture[prevFBO]);
+            //     // }
+                
 
             //     // Usa il framebuffer corrente
             //     glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[currFBO]);
@@ -738,34 +767,36 @@ int main(int argc, char** argv)
             // glDrawArrays(GL_TRIANGLES, 0, 12);
             // glBindVertexArray(0);
 
-            // // for(int pass = numPasses -1; pass >= 0; pass--){
-            // //     quadShader.bind();
-            // //     glActiveTexture(GL_TEXTURE1);
-            // //     glBindTexture(GL_TEXTURE_2D, colorTexture[pass]);
-            // //     glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            // //     glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
+            // for(int pass = numPasses -1; pass >= 0; pass--){
+            //     quadShader.bind();
+            //     glActiveTexture(GL_TEXTURE1);
+            //     glBindTexture(GL_TEXTURE_2D, colorTexture[pass]);
+            //     glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+            //     glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
 
-            // //     glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
-            // //     glBindVertexArray(VAO);
-            // //     glDrawArrays(GL_TRIANGLES, 0, 12);
-            // //     glBindVertexArray(0);
+            //     glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+            //     glBindVertexArray(VAO);
+            //     glDrawArrays(GL_TRIANGLES, 0, 12);
+            //     glBindVertexArray(0);
 
-            // // }
+            // }
             
-            // // quadShader.bind();
+            // quadShader.bind();
                 
-            // // // // Passa la texture di profondità precedente allo shader
-            // // //glUniform1i(quadShader.getUniformLocation("prevDepthTex"), 0);
-            // // //glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
+            // // // Passa la texture di profondità precedente allo shader
+            // //glUniform1i(quadShader.getUniformLocation("prevDepthTex"), 0);
+            // //glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
 
-            // // // Render della scena, con depth test che confronta con il valore del pass precedente
-            // // glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            // // glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
-            // // // Renderizza il piano
-            // // glBindVertexArray(VAO);
-            // // glDrawArrays(GL_TRIANGLES, 0, 12);
-            // // glBindVertexArray(0);
-            // //glDeleteFramebuffers(2, depthFBO);
+            // // Render della scena, con depth test che confronta con il valore del pass precedente
+            // glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+            // glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+            // // Renderizza il piano
+            // glBindVertexArray(VAO);
+            // glDrawArrays(GL_TRIANGLES, 0, 12);
+            // glBindVertexArray(0);
+            glDeleteFramebuffers(2, depthFBO);
+            glDeleteTextures(2, depthTexture);
+            glDeleteTextures(2, colorTexture);
         }else{
             Light& light = lights[selectedLightIndex];
             GLuint texLight = texLights[selectedLightIndex];
