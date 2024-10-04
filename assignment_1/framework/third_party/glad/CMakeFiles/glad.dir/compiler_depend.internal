@@ -3,8 +3,9 @@
 
 framework/third_party/glad/CMakeFiles/glad.dir/src/glad.c.o
  /home/pasi/Documents/GitHub/3DCGA/assignment_1/framework/third_party/glad/src/glad.c
- /home/pasi/Documents/GitHub/3DCGA/assignment_1/framework/third_party/glad/include/KHR/khrplatform.h
- /home/pasi/Documents/GitHub/3DCGA/assignment_1/framework/third_party/glad/include/glad/glad.h
+ /home/pasi/Desktop/A.Pasinato_6296173/framework/third_party/glad/include/KHR/khrplatform.h
+ /home/pasi/Desktop/A.Pasinato_6296173/framework/third_party/glad/include/glad/glad.h
+ /home/pasi/Desktop/A.Pasinato_6296173/framework/third_party/glad/src/glad.c
  /usr/include/alloca.h
  /usr/include/dlfcn.h
  /usr/include/endian.h

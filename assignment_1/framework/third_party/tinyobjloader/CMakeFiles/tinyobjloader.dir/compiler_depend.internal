@@ -3,7 +3,8 @@
 
 framework/third_party/tinyobjloader/CMakeFiles/tinyobjloader.dir/src/tiny_obj_loader.cc.o
  /home/pasi/Documents/GitHub/3DCGA/assignment_1/framework/third_party/tinyobjloader/src/tiny_obj_loader.cc
- /home/pasi/Documents/GitHub/3DCGA/assignment_1/framework/third_party/tinyobjloader/include/tinyobjloader/tiny_obj_loader.h
+ /home/pasi/Desktop/A.Pasinato_6296173/framework/third_party/tinyobjloader/include/tinyobjloader/tiny_obj_loader.h
+ /home/pasi/Desktop/A.Pasinato_6296173/framework/third_party/tinyobjloader/src/tiny_obj_loader.cc
  /usr/include/alloca.h
  /usr/include/asm-generic/errno-base.h
  /usr/include/asm-generic/errno.h
