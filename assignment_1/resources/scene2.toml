@@ -1,6 +1,6 @@
 [mesh]
 path = "resources/scene.obj"
-# path = "resources/david/"
+# path = "resources/box/"
 animated = false
 
 [material]

@@ -1,20 +1,19 @@
-#version 410 core
+#version 410 
 
 in vec4 Color;
-in vec3 Pos;
-out vec4 FragColor;
+in vec3 uv;
+layout (location=0) out vec4 FragColor;
 
-uniform int peel = 0;
-uniform sampler2D prevDepthTex;  // Profondità del pass precedente
+uniform int peel;
+uniform sampler2D prevDepthTex;
 
 void main() {
     if(peel != 0){
-        float prevDepth = texture(prevDepthTex, gl_FragCoord.xy).r;
-        if (gl_FragCoord.z <= prevDepth) {
-            discard;  // Scarta i frammenti che non sono "oltre" il precedente strato
+        float prevDepth = texture(prevDepthTex, uv.xy).r;
+        if (uv.z <= prevDepth) {
+            discard;     
         }
     }
-    
-    FragColor = Color; // Esempio di colore trasparente
-    //gl_FragColor = Color;
+        FragColor = Color;
+        gl_FragDepth = gl_FragCoord.z;
 }

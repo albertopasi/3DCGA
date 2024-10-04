@@ -1,18 +1,12 @@
 #version 410
 
 // Global variables for lighting calculations
-//uniform vec3 viewPos;
 uniform vec3 cameraPos;
 uniform vec3 lightPos;
 uniform sampler2D texToon;
 uniform float shininess; // Shininess factor for specular highlights
-// Global variables for lighting calculations.
-//uniform vec3 viewPos;
 uniform sampler2D texShadow;  
-
-// scene uniforms
 uniform mat4 lightMVP;
-// config uniforms, use these to control the shader from UI
 uniform int samplingMode = 0;
 uniform int lightMode = 0;
 uniform int shadows = 0;
@@ -58,7 +52,6 @@ float calculateShadow(){
 
     float visibility = 1.0;
     float bias = 0.0005;
-    //float bias = max(0.0001 * (dot(normal, lightDir)), 0.00005);
 
     if(samplingMode != 0){
         // pcf mode
@@ -119,8 +112,6 @@ void main(){
         visibility *= calculateSpotlight();
     }
 
-    vec4 color = texture(texToon, vec2(brightness*visibility, 1-value));
-    outColor = vec4(vec3(color.xyz * visibility), 1.0);
-
-    // outColor = vec4(vec3( lightColor * visibility * max(dot(fragNormal, lightDir), 0.0)), 1.0);
+    vec4 color = texture(texToon, vec2(brightness*visibility, 1.0-value));
+    outColor = vec4(vec3(color.xyz), 1.0);
 }

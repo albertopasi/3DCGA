@@ -31,10 +31,8 @@ DISABLE_WARNINGS_POP()
 #include <vector>
 #include <array>
 
-// Configuration
 const int WIDTH = 1200;
 const int HEIGHT = 800;
-
 bool show_imgui = true;
 bool debug = true;
 bool diffuseLighting = false;
@@ -47,6 +45,10 @@ bool toonxLighting = false;
 bool do_pcf = false;
 bool do_shadows = false;
 int scene = 0;
+
+glm::vec4 colorPlane1 (1.0f, 0.0f, 0.0f, 0.5f);
+glm::vec4 colorPlane2 (0.0f, 1.0f, 0.0f, 0.5f);
+glm::vec4 colorPlane3 (0.0f, 0.0f, 1.0f, 0.5f);
 
 enum class DiffuseModel {
     debug=0,
@@ -118,8 +120,6 @@ void removeLight() {
 
 void imgui()
 {
-
-    // Define UI here
     if (!show_imgui)
         return;
 
@@ -130,134 +130,142 @@ void imgui()
     std::array sceneNames { "Scene", "Transparency" };
     ImGui::Combo("Scenes", &scene, sceneNames.data(), sceneNames.size());
 
-    ImGui::Separator();
-    ImGui::Text("Material parameters");
+    if(!scene){
+        ImGui::Separator();
+        ImGui::Text("Material parameters");
 
-    // Color pickers for Kd and Ks
-    ImGui::ColorEdit3("Kd", &shadingData.kd[0]);
-    ImGui::ColorEdit3("Ks", &shadingData.ks[0]);
-    ImGui::SliderFloat("Shininess", &shadingData.shininess, 0.0f, 100.f);
-    ImGui::SliderInt("Toon Discretization", &shadingData.toonDiscretize, 1, 10);
-    ImGui::SliderFloat("Toon Specular Threshold", &shadingData.toonSpecularThreshold, 0.0f, 1.0f);
+        // Color pickers for Kd and Ks
+        ImGui::ColorEdit3("Kd", &shadingData.kd[0]);
+        ImGui::ColorEdit3("Ks", &shadingData.ks[0]);
+        ImGui::SliderFloat("Shininess", &shadingData.shininess, 0.0f, 100.f);
+        ImGui::SliderInt("Toon Discretization", &shadingData.toonDiscretize, 1, 10);
+        ImGui::SliderFloat("Toon Specular Threshold", &shadingData.toonSpecularThreshold, 0.0f, 1.0f);
 
-    ImGui::Separator();
-    ImGui::Text("Lights");
+        ImGui::Separator();
+        ImGui::Text("Lights");
 
-    // Display lights in scene
-    std::vector<std::string> itemStrings = {};
-    for (size_t i = 0; i < lights.size(); i++) {
-        auto string = "Light " + std::to_string(i);
-        itemStrings.push_back(string);
+        // Display lights in scene
+        std::vector<std::string> itemStrings = {};
+        for (size_t i = 0; i < lights.size(); i++) {
+            auto string = "Light " + std::to_string(i);
+            itemStrings.push_back(string);
+        }
+
+        std::vector<const char*> itemCStrings = {};
+        for (const auto& string : itemStrings) {
+            itemCStrings.push_back(string.c_str());
+        }
+
+        int tempSelectedItem = static_cast<int>(selectedLightIndex);
+        if (ImGui::ListBox("Lights", &tempSelectedItem, itemCStrings.data(), (int) itemCStrings.size(), 4)) {
+            selectedLightIndex = static_cast<size_t>(tempSelectedItem);
+        }
+
+        // Add/Remove/Reset lights
+        if (ImGui::Button("Add Light")) {
+            addLight();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Remove Light")) {
+            removeLight();
+        }
+        if (ImGui::Button("Reset Lights")) {
+            resetLights();
+        }
+
+        if (!lights.empty()) {
+            Light& selectedLight = lights[selectedLightIndex];
+
+            // Position of the light
+            ImGui::DragFloat3("Position", &selectedLight.position[0], 0.1f);
+
+            // Color of the light
+            ImGui::ColorEdit3("Color", &selectedLight.color[0]);
+        }
+        
+        ImGui::Checkbox("Spotlight", &lights[selectedLightIndex].is_spotlight);
+        ImGui::SameLine();
+        ImGui::Checkbox("Texture", &lights[selectedLightIndex].has_texture);
+
+        ImGui::Separator();
+        ImGui::Text("Render Settings");
+
+        std::array diffuseModels { "debug", "lambert", "toon", "x-toon" };
+        int current_diffuse = static_cast<int>(selectedDiffuseModel);
+        ImGui::Combo("Diffuse Model", &current_diffuse, diffuseModels.data(), diffuseModels.size());
+        selectedDiffuseModel = static_cast<DiffuseModel>(current_diffuse);
+
+        // Update lighting modes based on selected diffuse model
+        switch (selectedDiffuseModel) {
+            case DiffuseModel::debug:
+                debug = true;
+                diffuseLighting = false;
+                toonLightingDiffuse = false;
+                toonxLighting = false;
+                break;
+            case DiffuseModel::lambert:
+                debug = false;
+                diffuseLighting = true;
+                toonLightingDiffuse = false;
+                toonxLighting = false;
+                break;
+            case DiffuseModel::toon:
+                debug = false;
+                diffuseLighting = false;
+                toonLightingDiffuse = true;
+                toonxLighting = false;
+                break;
+            case DiffuseModel::xtoon:
+                debug = false;
+                diffuseLighting = false;
+                toonLightingDiffuse = false;
+                toonxLighting = true;
+                break;
+        }
+
+        std::array specularModels { "none", "phong", "blinn-phong", "toon" };
+        int current_specular = static_cast<int>(selectedSpecularModel);
+        ImGui::Combo("Specular Model", &current_specular, specularModels.data(), specularModels.size());
+        selectedSpecularModel = static_cast<SpecularModel>(current_specular);
+
+        // Update specular lighting modes based on selected specular model
+        switch (selectedSpecularModel) {
+            case SpecularModel::none:
+                phongSpecularLighting = false;
+                blinnPhongSpecularLighting = false;
+                toonLightingSpecular = false;
+                break;
+            case SpecularModel::phong:
+                phongSpecularLighting = true;
+                blinnPhongSpecularLighting = false;
+                toonLightingSpecular = false;
+                break;
+            case SpecularModel::blinnphong:
+                phongSpecularLighting = false;
+                blinnPhongSpecularLighting = true;
+                toonLightingSpecular = false;
+                break;
+            case SpecularModel::toon:
+                phongSpecularLighting = false;
+                blinnPhongSpecularLighting = false;
+                toonLightingSpecular = true;
+                break;
+        }
+
+        ImGui::Separator();
+        ImGui::Text("Shadows");
+        ImGui::Checkbox("Shadows", &do_shadows);
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!do_shadows);
+        ImGui::Checkbox("PCF", &do_pcf);
+        ImGui::EndDisabled();
+    }else{
+        ImGui::Separator();
+        ImGui::Text("Colors");
+        ImGui::ColorEdit4("Plane 1", &colorPlane1[0]);
+        ImGui::ColorEdit4("Plane 2", &colorPlane2[0]);
+        ImGui::ColorEdit4("Plane 3", &colorPlane3[0]);
     }
-
-    std::vector<const char*> itemCStrings = {};
-    for (const auto& string : itemStrings) {
-        itemCStrings.push_back(string.c_str());
-    }
-
-    int tempSelectedItem = static_cast<int>(selectedLightIndex);
-    if (ImGui::ListBox("Lights", &tempSelectedItem, itemCStrings.data(), (int) itemCStrings.size(), 4)) {
-        selectedLightIndex = static_cast<size_t>(tempSelectedItem);
-    }
-
-    // Add/Remove/Reset lights
-    if (ImGui::Button("Add Light")) {
-        addLight();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Remove Light")) {
-        removeLight();
-    }
-    if (ImGui::Button("Reset Lights")) {
-        resetLights();
-    }
-
-    if (!lights.empty()) {
-        Light& selectedLight = lights[selectedLightIndex];
-
-        // Position of the light
-        ImGui::DragFloat3("Position", &selectedLight.position[0], 0.1f);
-
-        // Color of the light
-        ImGui::ColorEdit3("Color", &selectedLight.color[0]);
-    }
-    
-    ImGui::Checkbox("Spotlight", &lights[selectedLightIndex].is_spotlight);
-    ImGui::SameLine();
-    ImGui::Checkbox("Texture", &lights[selectedLightIndex].has_texture);
-
-    ImGui::Separator();
-    ImGui::Text("Render Settings");
-
-    std::array diffuseModels { "debug", "lambert", "toon", "x-toon" };
-    int current_diffuse = static_cast<int>(selectedDiffuseModel);
-    ImGui::Combo("Diffuse Model", &current_diffuse, diffuseModels.data(), diffuseModels.size());
-    selectedDiffuseModel = static_cast<DiffuseModel>(current_diffuse);
-
-    // Update lighting modes based on selected diffuse model
-    switch (selectedDiffuseModel) {
-        case DiffuseModel::debug:
-            debug = true;
-            diffuseLighting = false;
-            toonLightingDiffuse = false;
-            toonxLighting = false;
-            break;
-        case DiffuseModel::lambert:
-            debug = false;
-            diffuseLighting = true;
-            toonLightingDiffuse = false;
-            toonxLighting = false;
-            break;
-        case DiffuseModel::toon:
-            debug = false;
-            diffuseLighting = false;
-            toonLightingDiffuse = true;
-            toonxLighting = false;
-            break;
-        case DiffuseModel::xtoon:
-            debug = false;
-            diffuseLighting = false;
-            toonLightingDiffuse = false;
-            toonxLighting = true;
-            break;
-    }
-
-    std::array specularModels { "none", "phong", "blinn-phong", "toon" };
-    int current_specular = static_cast<int>(selectedSpecularModel);
-    ImGui::Combo("Specular Model", &current_specular, specularModels.data(), specularModels.size());
-    selectedSpecularModel = static_cast<SpecularModel>(current_specular);
-
-    // Update specular lighting modes based on selected specular model
-    switch (selectedSpecularModel) {
-        case SpecularModel::none:
-            phongSpecularLighting = false;
-            blinnPhongSpecularLighting = false;
-            toonLightingSpecular = false;
-            break;
-        case SpecularModel::phong:
-            phongSpecularLighting = true;
-            blinnPhongSpecularLighting = false;
-            toonLightingSpecular = false;
-            break;
-        case SpecularModel::blinnphong:
-            phongSpecularLighting = false;
-            blinnPhongSpecularLighting = true;
-            toonLightingSpecular = false;
-            break;
-        case SpecularModel::toon:
-            phongSpecularLighting = false;
-            blinnPhongSpecularLighting = false;
-            toonLightingSpecular = true;
-            break;
-    }
-
-    ImGui::Separator();
-    ImGui::Text("Shadows");
-    ImGui::Checkbox("Shadows", &do_shadows);
-    ImGui::SameLine();
-    ImGui::BeginDisabled(!do_shadows);
-    ImGui::Checkbox("PCF", &do_pcf);
-    ImGui::EndDisabled();
 
     ImGui::End();
     ImGui::Render();
@@ -266,7 +274,6 @@ void imgui()
 std::optional<glm::vec3> tomlArrayToVec3(const toml::array* array)
 {
     glm::vec3 output {};
-
     if (array) {
         int i = 0;
         array->for_each([&](auto&& elem) {
@@ -318,7 +325,7 @@ int main(int argc, char** argv)
         bool has_texture = config["lights"]["has_texture"][i].value<bool>().value();
 
         auto tex_path = std::string(RESOURCE_ROOT) + config["lights"]["texture_path"][i].value_or("resources/smiley.png");
-        int width = 0, height = 0, sourceNumChannels = 0;// Number of channels in source image. pixels will always be the requested number of channels (3).
+        int width = 0, height = 0, sourceNumChannels = 0; // Number of channels in source image. pixels will always be the requested number of channels (3).
         stbi_uc* pixels = nullptr;        
         if (has_texture) {
             pixels = stbi_load(tex_path.c_str(), &width, &height, &sourceNumChannels, STBI_rgb);
@@ -441,21 +448,6 @@ int main(int argc, char** argv)
     const Shader quadShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/quad_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/quad_frag.glsl").build();
     const Shader depthPeelingShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, RESOURCE_ROOT "shaders/depth_vertex.glsl").addStage(GL_FRAGMENT_SHADER, RESOURCE_ROOT "shaders/depth_frag.glsl").build();
     
-    // Create Vertex Buffer Object and Index Buffer Objects.
-    // GLuint vbo;
-
-    // glGenBuffers(1, &vbo);
-    // glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    // glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(mesh.vertices.size() * sizeof(Vertex)), mesh.vertices.data(), GL_STATIC_DRAW);
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // GLuint ibo;
-    // // Create index buffer object (IBO)
-    // glGenBuffers(1, &ibo);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(mesh.triangles.size() * sizeof(decltype(Mesh::triangles)::value_type)), mesh.triangles.data(), GL_STATIC_DRAW);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
     // Bind vertex data to shader inputs using their index (location).
     // These bindings are stored in the Vertex Array Object.
     GLuint vao;
@@ -553,7 +545,6 @@ int main(int argc, char** argv)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibos[i]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(meshes[i].triangles.size() * sizeof(decltype(Mesh::triangles)::value_type)), meshes[i].triangles.data(), GL_STATIC_DRAW);
-
     }
 
     long long unsigned int currentFrame = 0;
@@ -588,29 +579,37 @@ int main(int argc, char** argv)
         const glm::mat4 projection = trackball.projectionMatrix();
         const glm::mat4 mvp = projection * view * model;
 
-        if(scene){
+        if(scene){ //transparency effect
             float quadVertices[] = {
-                // Posizioni           //Color
-                -0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,   // Vertice in alto a sinistra
-                 0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in basso a destra
-                -0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in basso a sinistra
+                // Positions           //Color
+                -0.5f,  0.5f,  0.0f,    colorPlane3[0], colorPlane3[1], colorPlane3[2], colorPlane3[3],
+                 0.5f, -0.5f,  0.0f,    colorPlane3[0], colorPlane3[1], colorPlane3[2], colorPlane3[3],
+                -0.5f, -0.5f,  0.0f,    colorPlane3[0], colorPlane3[1], colorPlane3[2], colorPlane3[3],
 
-                -0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in alto a sinistra
-                0.5f,  0.5f, 0.0f,     1.0f, 0.0f, 0.0f, 0.5f,  // Vertice in alto a destra
-                0.5f, -0.5f, 0.0f,      1.0f, 0.0f, 0.0f, 0.5f,   // Vertice in basso a destra
+                -0.5f,  0.5f,  0.0f,    colorPlane3[0], colorPlane3[1], colorPlane3[2], colorPlane3[3],
+                 0.5f,  0.5f,  0.0f,    colorPlane3[0], colorPlane3[1], colorPlane3[2], colorPlane3[3],
+                 0.5f, -0.5f,  0.0f,    colorPlane3[0], colorPlane3[1], colorPlane3[2], colorPlane3[3],
 
-                -0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f, 0.5f,   // Vertice in alto a sinistra
-                0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in basso a destra
-                -0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in basso a sinistra
+                -0.5f,  0.5f, -0.5f,    colorPlane2[0], colorPlane2[1], colorPlane2[2], colorPlane2[3],
+                 0.5f, -0.5f, -0.5f,    colorPlane2[0], colorPlane2[1], colorPlane2[2], colorPlane2[3],
+                -0.5f, -0.5f, -0.5f,    colorPlane2[0], colorPlane2[1], colorPlane2[2], colorPlane2[3],
                 
-                -0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in alto a sinistra
-                0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f, 0.5f,  // Vertice in alto a destra
-                0.5f, -0.5f, -0.5f,     0.0f, 1.0f, 0.0f, 0.5f,   // Vertice in basso a destra
+                -0.5f,  0.5f, -0.5f,    colorPlane2[0], colorPlane2[1], colorPlane2[2], colorPlane2[3],
+                 0.5f,  0.5f, -0.5f,    colorPlane2[0], colorPlane2[1], colorPlane2[2], colorPlane2[3],
+                 0.5f, -0.5f, -0.5f,    colorPlane2[0], colorPlane2[1], colorPlane2[2], colorPlane2[3],
+
+                -0.5f,  0.5f, -1.0f,    colorPlane1[0], colorPlane1[1], colorPlane1[2], colorPlane1[3],
+                 0.5f, -0.5f, -1.0f,    colorPlane1[0], colorPlane1[1], colorPlane1[2], colorPlane1[3],
+                -0.5f, -0.5f, -1.0f,    colorPlane1[0], colorPlane1[1], colorPlane1[2], colorPlane1[3],
+                
+                -0.5f,  0.5f, -1.0f,    colorPlane1[0], colorPlane1[1], colorPlane1[2], colorPlane1[3],
+                 0.5f,  0.5f, -1.0f,    colorPlane1[0], colorPlane1[1], colorPlane1[2], colorPlane1[3],
+                 0.5f, -0.5f, -1.0f,    colorPlane1[0], colorPlane1[1], colorPlane1[2], colorPlane1[3],
             };
             GLuint depthFBO[2];
             GLuint depthTexture[2];
             GLuint colorTexture[2];
-            
+            int numpass = 2;
             glGenFramebuffers(2, depthFBO);
             glGenTextures(2, depthTexture);
             glGenTextures(2, colorTexture);
@@ -636,172 +635,97 @@ int main(int argc, char** argv)
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture[i], 0);
                 glBindTexture(GL_TEXTURE_2D, 0);
 
-                // glDrawBuffer(GL_NONE); // Solo profondità
-                // glReadBuffer(GL_NONE);
+                GLenum drawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+                glDrawBuffers(1, drawBuffers); 
+
                 if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
                     std::cerr << "Errore nella creazione del framebuffer per Depth Peeling" << std::endl;
                 }
                 // glBindFramebuffer(GL_FRAMEBUFFER, 0);
             }
 
-
             GLuint VAO, VBO;
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
-
             glBindVertexArray(VAO);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-
-            // Attribuzione delle posizioni dei vertici
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
-
             glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
-
             glBindVertexArray(0);
 
             glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[0]);
             glClearDepth(1.0);
             glClearColor(0.0, 0.0, 0.0, 0.0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glDisable(GL_BLEND);
+
             glDisable(GL_DEPTH_TEST);
+            glDisable(GL_BLEND);
             glDepthMask(GL_TRUE);
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
             depthPeelingShader.bind();
+
             glUniformMatrix4fv(depthPeelingShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
             glUniform1i(depthPeelingShader.getUniformLocation("peel"), 0);
             glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
             glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 12);
+            glDrawArrays(GL_TRIANGLES, 0, 18);
             glBindVertexArray(0);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LEQUAL);
 
-            // glEnable(GL_DEPTH_TEST);
+            for(int pass = 1; pass < numpass; pass++){
+                int currFBO = pass % 2;
+                int prevFBO = 1 - currFBO;
+
+                glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[currFBO]);
+                glClearDepth(1.0);
+                glClearColor(1.0, 1.0, 0.0, 0.0);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                depthPeelingShader.bind();
+
+                glUniformMatrix4fv(depthPeelingShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+                glUniform1i(depthPeelingShader.getUniformLocation("peel"), pass);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, depthTexture[currFBO]);
+                glUniform1i(depthPeelingShader.getUniformLocation("prevDepthTex"), 0);
+                glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+                glBindVertexArray(VAO);
+                glDrawArrays(GL_TRIANGLES, 0, 18);
+                glBindVertexArray(0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glClearDepth(1.0);
-            glClearColor(0.0, 0.0, 0.0, 0.0);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            quadShader.bind();
-            glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, colorTexture[0]);
-            glUniform1i(quadShader.getUniformLocation("prevColorTex"), 0);
-            glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 12);
-            glBindVertexArray(0);
-            //glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            // glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[0]);
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            for(int pass = numpass - 1; pass >= 0; pass--){
+                quadShader.bind();
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, colorTexture[pass]);
+                glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+                glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
+                glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
+                glBindVertexArray(VAO);
+                glDrawArrays(GL_TRIANGLES, 0, 12);
+                glBindVertexArray(0);
+            }
 
-            // //glDisable(GL_DEPTH_TEST);
-
-            // // glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[0]);
-            // // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            // glDepthMask(GL_TRUE);
-            // glDepthFunc(GL_LESS);
-            // glDisable(GL_DEPTH_TEST);
-            
-            // //renderScene();
-            // //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            
-            // // glEnable(GL_BLEND);
-            // // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            // const int numPasses = 2;
-            // for (int pass = 0; pass < numPasses; ++pass) {
-            //     // Scambia framebuffer
-            //     int currFBO = pass % 2;
-            //     int prevFBO = 1 - currFBO;
-                
-            //     // if(pass == 0){
-            //     //     glDisable(GL_DEPTH_TEST);
-            //     // }else{
-            //     //     glEnable(GL_DEPTH_TEST);
-            //     // }
-                
-
-            //     // if (pass > 0) {  // Nel primo passaggio non c'è una texture di profondità precedente
-            //     //     glDepthFunc(GL_GREATER);
-            //     //     glActiveTexture(GL_TEXTURE0);
-            //     //     glBindTexture(GL_TEXTURE_2D, depthTexture[prevFBO]);
-            //     //     glEnable(GL_DEPTH_TEST);
-            //     //     // glActiveTexture(GL_TEXTURE1);
-            //     //     // glBindTexture(GL_TEXTURE_2D, colorTexture[prevFBO]);
-            //     // }
-                
-
-            //     // Usa il framebuffer corrente
-            //     glBindFramebuffer(GL_FRAMEBUFFER, depthFBO[currFBO]);
-            //     glClearDepth(1.0f);
-            //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                
-            //     depthPeelingShader.bind();
-
-            //     // Usa uno shader per confrontare la profondità
-                
-            //     // // Passa la texture di profondità precedente allo shader
-            //     glUniform1i(depthPeelingShader.getUniformLocation("prevDepthTex"), 0);
-            //     //glUniform1i(depthPeelingShader.getUniformLocation("prevColorTex"), 1);
-
-            //     // Render della scena, con depth test che confronta con il valore del pass precedente
-            //     glUniformMatrix4fv(depthPeelingShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            //     glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
-            //     // Renderizza il piano
-            //     glBindVertexArray(VAO);
-            //     glDrawArrays(GL_TRIANGLES, 0, 12);
-            //     glBindVertexArray(0);
-            //     //glBindTexture(GL_TEXTURE_2D, 0);
-            //     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-                
-            // }
-            // glEnable(GL_BLEND);
-            // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            // quadShader.bind();
-            // glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            // glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
-            // glBindVertexArray(VAO);
-            // glDrawArrays(GL_TRIANGLES, 0, 12);
-            // glBindVertexArray(0);
-
-            // for(int pass = numPasses -1; pass >= 0; pass--){
-            //     quadShader.bind();
-            //     glActiveTexture(GL_TEXTURE1);
-            //     glBindTexture(GL_TEXTURE_2D, colorTexture[pass]);
-            //     glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            //     glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
-
-            //     glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
-            //     glBindVertexArray(VAO);
-            //     glDrawArrays(GL_TRIANGLES, 0, 12);
-            //     glBindVertexArray(0);
-
-            // }
-            
-            // quadShader.bind();
-                
-            // // // Passa la texture di profondità precedente allo shader
-            // //glUniform1i(quadShader.getUniformLocation("prevDepthTex"), 0);
-            // //glUniform1i(quadShader.getUniformLocation("prevColorTex"), 1);
-
-            // // Render della scena, con depth test che confronta con il valore del pass precedente
-            // glUniformMatrix4fv(quadShader.getUniformLocation("mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-            // glViewport(0, 0, window.getWindowSize().x, window.getWindowSize().y);
-            // // Renderizza il piano
-            // glBindVertexArray(VAO);
-            // glDrawArrays(GL_TRIANGLES, 0, 12);
-            // glBindVertexArray(0);
             glDeleteFramebuffers(2, depthFBO);
             glDeleteTextures(2, depthTexture);
             glDeleteTextures(2, colorTexture);
+
         }else{
+
             Light& light = lights[selectedLightIndex];
             GLuint texLight = texLights[selectedLightIndex];
 
-            glm::vec3 lightPosition = lights[selectedLightIndex].position;  // posizione della luce
+            glm::vec3 lightPosition = lights[selectedLightIndex].position;  //light's position
             glm::vec3 lightDirection = lights[selectedLightIndex].direction;
              glm::vec3 lightTarget = (lightDirection - lightPosition);
             glm::vec3 up = glm::vec3(0.0, 1.0, 0.0);
@@ -814,51 +738,18 @@ int main(int argc, char** argv)
 
             glm::mat4 lightView = glm::lookAt(lightPosition, lightTarget, upVector);
 
-
-
-            // float orthoLeft = -10.0f;
-            // float orthoRight = 10.0f;
-            // float orthoBottom = -10.0f;
-            // float orthoTop = 10.0f;
             float nearPlane = 1.0f;
             float farPlane = 100.0f;
 
-            // glm::mat4 lightProjectionMatrix = glm::ortho(orthoLeft, orthoRight, orthoBottom, orthoTop, nearPlane, farPlane);
-            //if(lights[0].is_spotlight){
-                constexpr float fov = glm::pi<float>() / 4.0f;
-                const float aspectRatio = static_cast<float>(window.getWindowSize().x) / static_cast<float>(window.getWindowSize().y);
-                const glm::mat4 lightProjectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
-            // lightMVP = projection * lightView;
-            // }else{
-                // const glm::mat4 orthoLightProjectionMatrix = glm::ortho<float>(-10, 10, -10, 10, -10, 20);
-                // lightMVP = orthoLightProjectionMatrix * lightView;
-            // }
-
-
-            glm::mat4 modelMatrix = glm::mat4(1.0f);  // Matrice del modello (può essere diversa per ogni oggetto)
-
+            constexpr float fov = glm::pi<float>() / 4.0f;
+            const float aspectRatio = static_cast<float>(window.getWindowSize().x) / static_cast<float>(window.getWindowSize().y);
+            const glm::mat4 lightProjectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+            glm::mat4 modelMatrix = glm::mat4(1.0f);
             glm::mat4 lightMVP = lightProjectionMatrix * lightView * modelMatrix;
-
-            // GLuint texLight;
-            
-            // glGenTextures(1, &texLight);
-            // glBindTexture(GL_TEXTURE_2D, texLight);
-            // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, light.texture.width, light.texture.height, 0, GL_RGB, GL_UNSIGNED_BYTE, light.texture.texture_data);
-
-
-            // // Set behaviour for when texture coordinates are outside the [0, 1] range.
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-            // // Set interpolation for texture sampling (GL_NEAREST for no interpolation).
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            // glBindTexture(GL_TEXTURE_2D, 0);
 
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, texLight);
-            
+
 
             bool renderedSomething = false;
             auto render = [&](const Shader &shader) {
@@ -882,12 +773,10 @@ int main(int argc, char** argv)
                 glBindVertexArray(0);
             };
 
-
             glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
             glClearDepth(1.0);
             glClear(GL_DEPTH_BUFFER_BIT);
             glEnable(GL_DEPTH_TEST);
-
             
             shadowShader.bind();
             glViewport(0, 0, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT);
@@ -903,7 +792,6 @@ int main(int argc, char** argv)
 
             // Unbind the off-screen framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texShadow);
@@ -929,7 +817,6 @@ int main(int argc, char** argv)
                         xToonShader.bind();
 
                         // === SET YOUR X-TOON UNIFORMS HERE ===
-                        // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos and texToon.
 
                         glActiveTexture(GL_TEXTURE2);
                         glBindTexture(GL_TEXTURE_2D, texToon);
@@ -938,10 +825,12 @@ int main(int argc, char** argv)
                         glUniform1f(xToonShader.getUniformLocation("shininess"), shadingData.shininess);
                         glUniform1i(xToonShader.getUniformLocation("lightMode"), static_cast<int>(light.is_spotlight));
                         glUniformMatrix4fv(xToonShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
-                        
+                        glUniform1i(xToonShader.getUniformLocation("lightMode"), static_cast<int>(light.is_spotlight));
+                        glUniform1i(xToonShader.getUniformLocation("shadows"), static_cast<int> (do_shadows));
+                        glUniform1i(xToonShader.getUniformLocation("samplingMode"), static_cast<int> (do_pcf));
                         glUniform1i(xToonShader.getUniformLocation("texShadow"), 0);
+                        glUniform1i(xToonShader.getUniformLocation("texToon"), 2);
 
-                        glUniform1i(xToonShader.getUniformLocation("texToon"), 2); // Change xxx to the uniform name that you want to use.
                         render(xToonShader);
 
                     } else {
@@ -949,100 +838,58 @@ int main(int argc, char** argv)
                             toonDiffuseShader.bind();
 
                             // === SET YOUR DIFFUSE TOON UNIFORMS HERE ===
-                            // Values that you may want to pass to the shader are stored in light, shadingData.
-                            // 1. Pass the light's position to the shader
+
                             glUniform3fv(toonDiffuseShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
-
-                            // 2. Pass the light's color to the shader
                             glUniform3fv(toonDiffuseShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
-
-                            // 3. Pass the diffuse reflection coefficient (kd) to the shader
                             glUniform3fv(toonDiffuseShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
-
                             glUniform1i(toonDiffuseShader.getUniformLocation("toonDiscretize"), shadingData.toonDiscretize);
                             glUniformMatrix4fv(toonDiffuseShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
-
                             glUniform1i(toonDiffuseShader.getUniformLocation("lightMode"), static_cast<int>(light.is_spotlight));
                             glUniform1i(toonDiffuseShader.getUniformLocation("shadows"), static_cast<int> (do_shadows));
                             glUniform1i(toonDiffuseShader.getUniformLocation("samplingMode"), static_cast<int> (do_pcf));
                             glUniform1i(toonDiffuseShader.getUniformLocation("texShadow"), 0);
                             glUniform1i(toonDiffuseShader.getUniformLocation("lightColorMode"), static_cast<int>(light.has_texture));
                             glUniform1i(toonDiffuseShader.getUniformLocation("texLight"), 1);
-
-                            
-                            // glClearDepth(1.0);
-                            // //glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-                            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                            // glDisable(GL_CULL_FACE);
                             glEnable(GL_DEPTH_TEST);
         
-
-
                             render(toonDiffuseShader);
                         }
                         if (toonLightingSpecular) {
                             toonSpecularShader.bind();
 
                             // === SET YOUR SPECULAR TOON UNIFORMS HERE ===
-                            // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
 
-                            // 1. Pass the light's position to the shader
                             glUniform3fv(toonSpecularShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
-
-                            // 3. Pass the camera position to the shader
                             glUniform3fv(toonSpecularShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
-
-                            // 5. Pass the shininess factor to the shader
                             glUniform1f(toonSpecularShader.getUniformLocation("shininess"), shadingData.shininess);
-
                             glUniform1f(toonSpecularShader.getUniformLocation("toonSpecularThreshold"), shadingData.toonSpecularThreshold);
-
                             glUniformMatrix4fv(toonSpecularShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
-                    
                             glUniform1i(toonSpecularShader.getUniformLocation("texShadow"), 0);
-
                             glUniform1i(toonSpecularShader.getUniformLocation("shadows"),static_cast<int> (do_shadows));
                             glUniform1i(toonSpecularShader.getUniformLocation("samplingMode"),static_cast<int> (do_pcf));
                             glUniform1i(toonSpecularShader.getUniformLocation("lightMode"), static_cast<int>(light.is_spotlight));
+                            
                             render(toonSpecularShader);
                         }
                     }
                 }
                 if (!renderedSomething) {
                     if (diffuseLighting) {
-                        lambertShader.bind();  // Bind the Lambert shader
+                        lambertShader.bind();
 
                         // === SET YOUR LAMBERT UNIFORMS HERE ===
 
-                        // 1. Pass the light's position to the shader
                         glUniform3fv(lambertShader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
-
-                        // 2. Pass the light's color to the shader
                         glUniform3fv(lambertShader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
-
-                        // 3. Pass the diffuse reflection coefficient (kd) to the shader
                         glUniform3fv(lambertShader.getUniformLocation("kd"), 1, glm::value_ptr(shadingData.kd));
-
                         glUniformMatrix4fv(lambertShader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
-
                         glUniform1i(lambertShader.getUniformLocation("texShadow"), 0);
-
                         glUniform1i(lambertShader.getUniformLocation("shadows"), static_cast<int> (do_shadows));
                         glUniform1i(lambertShader.getUniformLocation("samplingMode"), static_cast<int> (do_pcf));
                         glUniform1i(lambertShader.getUniformLocation("lightMode"), static_cast<int>(light.is_spotlight));
                         glUniform1i(lambertShader.getUniformLocation("lightColorMode"), static_cast<int>(light.has_texture));
                         glUniform1i(lambertShader.getUniformLocation("texLight"), 1);
-
-                        // glClearDepth(1.0);
-                        // //glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-                        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                        // glDisable(GL_CULL_FACE);
                         glEnable(GL_DEPTH_TEST);
-        
-
-
-
-                        // Call the render function after setting the uniforms
                     
                         render(lambertShader);
                     }
@@ -1051,27 +898,14 @@ int main(int argc, char** argv)
                         shader.bind();
 
                         // === SET YOUR PHONG/BLINN PHONG UNIFORMS HERE ===
-                        // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
-                        // 1. Pass the light's position to the shader
+ 
                         glUniform3fv(shader.getUniformLocation("lightPos"), 1, glm::value_ptr(light.position));
-
-                        // 2. Pass the light's color to the shader
                         glUniform3fv(shader.getUniformLocation("lightColor"), 1, glm::value_ptr(light.color));
-
-                        // 3. Pass the camera position to the shader
                         glUniform3fv(shader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos));
-
-                        // 4. Pass the specular reflection coefficient (ks) to the shader
                         glUniform3fv(shader.getUniformLocation("ks"), 1, glm::value_ptr(shadingData.ks));
-
-                        // 5. Pass the shininess factor to the shader
                         glUniform1f(shader.getUniformLocation("shininess"), shadingData.shininess);
-
                         glUniformMatrix4fv(shader.getUniformLocation("lightMVP"), 1, GL_FALSE, glm::value_ptr(lightMVP));
-                    
-                        
                         glUniform1i(shader.getUniformLocation("texShadow"), 0);
-
                         glUniform1i(shader.getUniformLocation("shadows"),static_cast<int> (do_shadows));
                         glUniform1i(shader.getUniformLocation("samplingMode"),static_cast<int> (do_pcf));
                         glUniform1i(shader.getUniformLocation("lightMode"), static_cast<int>(light.is_spotlight));
@@ -1089,7 +923,6 @@ int main(int argc, char** argv)
             }
             if (!renderedSomething) {
                 debugShader.bind();
-                //glUniform3fv(debugShader.getUniformLocation("cameraPos"), 1, glm::value_ptr(cameraPos)); // viewPos.
                 render(debugShader);
             }
 
