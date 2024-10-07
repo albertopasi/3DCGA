@@ -43,8 +43,8 @@ int main(int argc, char* argv[]) {
         m_window.updateInput();
 
         // View-projection matrix setup
-        const glm::mat4 m_projection        = glm::perspective(utils::FOV, utils::ASPECT_RATIO, 0.1f, 30.0f);
-        const glm::mat4 m_viewProjection    = m_projection * mainCamera.viewMatrix();
+        const glm::mat4 m_projection = glm::perspective(utils::FOV, utils::ASPECT_RATIO, 0.1f, 30.0f);
+        const glm::mat4 m_viewProjection = m_projection * mainCamera.viewMatrix();
 
         // Bind main draw framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
