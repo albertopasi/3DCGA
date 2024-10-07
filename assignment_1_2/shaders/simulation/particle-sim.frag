@@ -25,16 +25,33 @@ void main() {
     // ===== Task 1.1 Verlet Integration =====
     vec3 acceleration = vec3(0.0, -9.81, 0.0);
 
-    vec3 newPosition = currentPosition + (currentVelocity * timestep) + (0.5 * acceleration * timestep * timestep);
-    vec3 newVelocity = currentVelocity + (acceleration * timestep);
+    finalPosition = currentPosition + (currentVelocity * timestep) + (0.5 * acceleration * timestep * timestep);
+    finalVelocity = currentVelocity + (acceleration * timestep);
 
-    finalPosition = newPosition;
-    finalVelocity = newVelocity;
 
     // ===== Task 1.3 Inter-particle Collision =====
     if (interParticleCollision) {
+        
+
+
     }
     
     // ===== Task 1.2 Container Collision =====
+    
+    float distanceCenters = distance(containerCenter, finalPosition);
+    float diffRadius = containerRadius - particleRadius;
+    vec3 tempNormal = normalize(containerCenter - finalPosition);
+    vec3 instersectionPoint = containerCenter - tempNormal*containerRadius;
+    vec3 normal = normalize((instersectionPoint + tempNormal) - instersectionPoint);
+
+    if(distanceCenters >= diffRadius){
+        finalVelocity = reflect (finalVelocity, normal );
+        finalPosition += finalVelocity * timestep;
+    }
+
+
+
+
+
 
 }
