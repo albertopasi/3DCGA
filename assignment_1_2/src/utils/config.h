@@ -24,5 +24,10 @@ struct Config {
     glm::vec3 sphereColor           = glm::vec3(1.0f);
 
     // ===== Part 2: Drawing =====
-
+    bool useSpeedBasedColor         = false;
+    glm::vec3 partMinSpeedColor     = glm::vec3(0,0,1);
+    glm::vec3 partMaxSpeedColor     = glm::vec3(1,0,0);
+    float colorMaxSpeed             = 7.5f;
+    bool useShading                 = false;
+    float ambientCoef               = 0.25;
 };

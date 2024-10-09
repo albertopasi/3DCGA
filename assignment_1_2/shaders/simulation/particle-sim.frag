@@ -31,10 +31,24 @@ void main() {
 
     // ===== Task 1.3 Inter-particle Collision =====
     if (interParticleCollision) {
-        
+        for(int i=0; i<numParticles; i++){
 
+            float index = float(i) / float(numParticles);
+            vec3 othersPosition = texture(previousPositions, vec2(index, 0.5)).xyz;
 
+            if(currentPosition == othersPosition) continue;
+
+            vec3 normalCollision = normalize(finalPosition - othersPosition);
+            float distanceOthers = distance(finalPosition,othersPosition);
+
+            if(distanceOthers < 2.0*particleRadius){
+                float penetrationDepth = 2*particleRadius - distanceOthers;
+                finalPosition += normalCollision * penetrationDepth;
+                finalVelocity = reflect(currentVelocity, normalCollision);
+            }
+        }
     }
+
     
     // ===== Task 1.2 Container Collision =====
     
@@ -43,11 +57,10 @@ void main() {
     float diffRadius = containerRadius - particleRadius;
 
     if(distanceCenters >= diffRadius){
-        vec3 tempNormal = normalize(containerCenter - finalPosition);
+        vec3 normal = normalize(containerCenter - finalPosition);
         float outsideDepth = distanceCenters - diffRadius;
-        finalPosition += tempNormal * (outsideDepth + offset);
-        vec3 borderNormal = normalize(containerCenter - finalPosition);
-        finalVelocity = reflect (finalVelocity, borderNormal);
+        finalPosition += normal * (outsideDepth + offset);
+        finalVelocity = reflect (finalVelocity, normal);
     }
 
 

@@ -62,5 +62,14 @@ void Menu::drawSphereContainerControls() {
 }
 
 void Menu::drawParticleColorControls() {
+    ImGui::Checkbox("Use speed-based color", &m_config.useSpeedBasedColor);
+    ImGui::BeginDisabled(!m_config.useSpeedBasedColor);
+    ImGui::ColorEdit3("Color min speed", glm::value_ptr(m_config.partMinSpeedColor));
+    ImGui::SameLine;
+    ImGui::ColorEdit3("Color max speed", glm::value_ptr(m_config.partMaxSpeedColor));
+    ImGui::DragFloat("Maximum Speed", &m_config.colorMaxSpeed, 0.01f, 0.0f, 20.0f, "%.2f");
+    ImGui::EndDisabled();
+    ImGui::Checkbox("Use shading", &m_config.useShading);
+    ImGui::DragFloat("Ambient coefficient", &m_config.ambientCoef, 0.01f, 0.0f, 0.5f, "%.2f");
 }
 
