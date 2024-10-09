@@ -38,15 +38,16 @@ void main() {
     
     // ===== Task 1.2 Container Collision =====
     
+    float offset = 0.001;
     float distanceCenters = distance(containerCenter, finalPosition);
     float diffRadius = containerRadius - particleRadius;
-    vec3 tempNormal = normalize(containerCenter - finalPosition);
-    vec3 instersectionPoint = containerCenter - tempNormal*containerRadius;
-    vec3 normal = normalize((instersectionPoint + tempNormal) - instersectionPoint);
 
     if(distanceCenters >= diffRadius){
-        finalVelocity = reflect (finalVelocity, normal );
-        finalPosition += finalVelocity * timestep;
+        vec3 tempNormal = normalize(containerCenter - finalPosition);
+        float outsideDepth = distanceCenters - diffRadius;
+        finalPosition += tempNormal * (outsideDepth + offset);
+        vec3 borderNormal = normalize(containerCenter - finalPosition);
+        finalVelocity = reflect (finalVelocity, borderNormal);
     }
 
 
