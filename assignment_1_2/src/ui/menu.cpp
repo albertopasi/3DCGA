@@ -70,6 +70,16 @@ void Menu::drawParticleColorControls() {
     ImGui::DragFloat("Maximum Speed", &m_config.colorMaxSpeed, 0.01f, 0.0f, 20.0f, "%.2f");
     ImGui::EndDisabled();
     ImGui::Checkbox("Use shading", &m_config.useShading);
-    ImGui::DragFloat("Ambient coefficient", &m_config.ambientCoef, 0.01f, 0.0f, 0.5f, "%.2f");
+    ImGui::BeginDisabled(!m_config.useShading);
+    ImGui::SliderFloat("Ambient coefficient", &m_config.ambientCoef, 0.0f, 0.5f, "%.2f");
+    ImGui::EndDisabled();
+    ImGui::Checkbox("Use bounce-based colors", &m_config.useBounceColor);
+    ImGui::BeginDisabled(!m_config.useBounceColor);
+    ImGui::SliderInt("Bounce threshold", &m_config.bounceThreshold, 0, 50);
+    ImGui::SliderInt("Bounce frames", &m_config.bounceFrames, 0, 500);
+    ImGui::ColorEdit3("Bounce color", glm::value_ptr(m_config.bounceColor));
+
+    ImGui::EndDisabled();
+
 }
 

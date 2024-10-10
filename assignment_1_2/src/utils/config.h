@@ -30,4 +30,8 @@ struct Config {
     float colorMaxSpeed             = 7.5f;
     bool useShading                 = false;
     float ambientCoef               = 0.25;
+    bool useBounceColor             = false;
+    int bounceThreshold             = 5;
+    int bounceFrames                = 60;
+    glm::vec3 bounceColor           = glm::vec3(1,1,0);
 };
