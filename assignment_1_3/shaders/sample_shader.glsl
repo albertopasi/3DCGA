@@ -100,9 +100,7 @@ vec2 march_ray(vec2 origin, vec2 direction, float step_size) {
 }
 
 void main()
-{   // PREVIOUS CODE
-    // //If a shape is hit we can sample it
-    // bool hit = false;
+{
     // if(hit){
     //     // ---- Circle
     //     if (shape_type == 0) {
@@ -111,11 +109,10 @@ void main()
     //     else if (shape_type == 1) {
     //     }
     // }
-    // outColor = vec4(0);
-    // END OF PREVIOUS CODE
+
 
     // Initialize the random seed using pixel coordinates and frame number
-    uint seed = frame_nr * ( uint(gl_FragCoord.x) * 512 + uint(gl_FragCoord.y));
+    uint seed = frame_nr * ( uint(gl_FragCoord.x) * 912671 + uint(gl_FragCoord.y));
 
     // Generate a random direction for ray marching
     float random_angle = get_random_numbers(seed) * 2.0 * M_PI; // Random angle
