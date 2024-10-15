@@ -20,7 +20,6 @@ layout(location = 0) out vec4 fragColor;
 void main() {
     vec3 baseColor = vec3(1.0);
 
-    
     // ===== Task 2.1 Speed-based Colors =====
 
     if(useSpeedBasedColor) {
@@ -50,8 +49,6 @@ void main() {
         baseColor = ambient + diffuse;
     }
 
-
     finalColor = baseColor;
-
     fragColor = vec4(finalColor, 1.0);
 }

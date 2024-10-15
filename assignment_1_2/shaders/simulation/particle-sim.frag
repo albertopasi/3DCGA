@@ -19,12 +19,12 @@ layout(location = 2) out vec3 finalBounceData;
 
 void main() {
 
-    // Fetch particle's current position and velocity
     //ivec2 fragCoord = ivec2(gl_FragCoord.xy);
     // vec3 currentPosition = texelFetch(previousPositions, fragCoord, 0).xyz;
     // vec3 currentVelocity = texelFetch(previousVelocities, fragCoord, 0).xyz;
     // vec3 currentBounceData = texelFetch(previousBounceData, fragCoord, 0).xyz;
-
+    
+    // Fetch particle's current position and velocity
     vec3 currentPosition = texture(previousPositions, gl_FragCoord.xy/textureSize(previousPositions,0)).xyz;
     vec3 currentVelocity = texture(previousVelocities, gl_FragCoord.xy/textureSize(previousVelocities,0)).xyz;
     vec3 currentBounceData = texture(previousBounceData, gl_FragCoord.xy/textureSize(previousBounceData ,0)).xyz;
@@ -37,6 +37,15 @@ void main() {
 
     float offset = 0.001;
 
+    // blinking matters
+    if(currentBounceData.x == bounceThreshold){
+        currentBounceData.x = 0;
+        currentBounceData.y = bounceFrames;
+    }
+
+    if(currentBounceData.y > 0){
+        currentBounceData.y --;
+    }
     
     // ===== Task 1.3 Inter-particle Collision =====
     if (interParticleCollision) {
@@ -62,7 +71,6 @@ void main() {
             }
         }
     }
-
     
     // ===== Task 1.2 Container Collision =====
     
@@ -83,16 +91,4 @@ void main() {
     }
 
     finalBounceData = vec3(currentBounceData.x, currentBounceData.y, 0.0);
-
-    if(currentBounceData.x == bounceThreshold){
-        currentBounceData.x = 0;
-        currentBounceData.y = bounceFrames;
-    }
-
-    if(currentBounceData.y > 0){
-        currentBounceData.y --;
-    }
-
-
-
 }

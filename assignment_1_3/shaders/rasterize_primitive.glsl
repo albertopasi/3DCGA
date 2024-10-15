@@ -44,10 +44,35 @@ uniform uint shape_type;
 uniform float rasterize_width;
 
 void main()
-{
+{   
+    // Default value: -1 means no circle found
+    shape_id = -1;
+
     // ---- CIRCLE
     if (shape_type == 0) {
+        // Current pixel position
+        vec2 pixel_pos = gl_FragCoord.xy;
+
+        // Loop over all circles
+        for (int i = 0; i < circle_count; i++) {
+            Circle c = circles[i];
+
+            // Distance from the pixel to the center of the current circle
+            float dist = distance(pixel_pos, c.position);
+
+            // Check if the pixel is within the circle radius + rasterize width
+            if (dist <= c.radius + rasterize_width && dist >= c.radius - rasterize_width) {
+                // Assign the shape_id to the circle index
+                shape_id = i;
+                break; // Exit loop when the first circle is found (lowest index)
+            }
+        }
     }
+
+
+
+
+
     // ---- LINE
     else if (shape_type == 1) {
     }
