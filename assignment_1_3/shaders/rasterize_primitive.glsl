@@ -47,33 +47,52 @@ void main()
 {   
     // Default value: -1 means no circle found
     shape_id = -1;
+    vec2 pixel_pos = gl_FragCoord.xy;
 
     // ---- CIRCLE
     if (shape_type == 0) {
-        // Current pixel position
-        vec2 pixel_pos = gl_FragCoord.xy;
-
-        // Loop over all circles
         for (int i = 0; i < circle_count; i++) {
             Circle c = circles[i];
 
-            // Distance from the pixel to the center of the current circle
             float dist = distance(pixel_pos, c.position);
-
-            // Check if the pixel is within the circle radius + rasterize width
             if (dist <= c.radius + rasterize_width && dist >= c.radius - rasterize_width) {
-                // Assign the shape_id to the circle index
                 shape_id = i;
-                break; // Exit loop when the first circle is found (lowest index)
+                break;
             }
         }
     }
-
-
-
-
-
     // ---- LINE
     else if (shape_type == 1) {
+        for(int i=0; i< line_count; i++){
+            Line l = lines[i];
+
+            float distanceStart = distance(pixel_pos, l.start_point);
+            float distanceEnd = distance(pixel_pos, l.end_point);
+
+            //check if pixel is the two semicircles of at the start and end of the line
+            if(distanceStart <= rasterize_width || distanceEnd <= rasterize_width){
+                shape_id = i;
+                break;
+            }
+
+            vec2 lineDir = normalize(l.end_point - l.start_point);
+            vec2 pixelToStart = pixel_pos - l.start_point;
+
+            float projectionLength = dot(pixelToStart, lineDir);
+            vec2 projectedPoint = l.start_point + projectionLength * lineDir;
+
+            float distanceProjToStart = distance(l.start_point, projectedPoint);
+            float distanceProjToEnd = distance(l.end_point, projectedPoint);
+            float lineLength = length(l.end_point - l.start_point);
+           
+           //check if pixel is within rasterize_with from the line (excluding the semicircles)
+            if (distanceProjToStart <= lineLength && distanceProjToEnd <= lineLength) {
+                float distancePixelToLine = distance(pixel_pos, projectedPoint);
+                if(distancePixelToLine <= rasterize_width){
+                    shape_id = i;
+                    break;
+                }
+            }
+        }
     }
 }
