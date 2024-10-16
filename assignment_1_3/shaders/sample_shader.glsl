@@ -101,49 +101,62 @@ vec2 march_ray(vec2 origin, vec2 direction, float step_size) {
 
 void main()
 {
-    // if(hit){
-    //     // ---- Circle
-    //     if (shape_type == 0) {
-    //     }
-    //     // ---- Line
-    //     else if (shape_type == 1) {
-    //     }
-    // }
-
-
     // Initialize the random seed using pixel coordinates and frame number
     uint seed = frame_nr * ( uint(gl_FragCoord.x) * 912671 + uint(gl_FragCoord.y));
-
     // Generate a random direction for ray marching
-    float random_angle = get_random_numbers(seed) * 2.0 * M_PI; // Random angle
-    vec2 random_direction = vec2(cos(random_angle), sin(random_angle)); // Direction on the unit circle
+    float random_angle = get_random_numbers(seed) * 2.0 * M_PI;
+    vec2 random_direction = vec2(cos(random_angle), sin(random_angle));
 
-    // Normalize pixel coordinates to the range [0, 1]
-    vec2 origin = gl_FragCoord.xy; 
-    vec2 intersection = march_ray(origin, random_direction, step_size); // March the ray from the pixel's center
+    vec2 pixelPos = gl_FragCoord.xy; 
+    vec2 intersection = march_ray(pixelPos, random_direction, step_size); // March the ray from the pixel's center
 
-    // Sample the previous value from the accumulator texture using normalized coordinates
+    // sample the previous value from the accumulator texture using normalized coordinates
     vec4 accumulated_color = texture(accumulator_texture, gl_FragCoord.xy/screen_dimensions);
 
-    // If an intersection is found
+    // if an intersection is found
     if (intersection.x != -1.0 && intersection.y != -1.0) {
-        vec2 tex_coords = intersection; // Intersection coordinates should already be normalized
+        vec2 tex_coords = intersection;
         int shape_id = texture(rasterized_texture, tex_coords).r;
 
-        // If a circle is hit
-        if (shape_type == 0 && shape_id != -1) {
-            Circle c = circles[shape_id]; // Retrieve circle data
+        if(shape_id != -1){
+            if (shape_type == 0) { //if a circle is hit
 
-            // Check if the sample is inside the circle
-            if (distance(origin, c.position) <= c.radius) {
-                // Accumulate the color of the circle
-                accumulated_color += c.color; // Assuming c.color is in [0, 1]
+                Circle c = circles[shape_id];
 
+                if (distance(pixelPos, c.position) <= c.radius) {
+                    accumulated_color += c.color;
+                }
+
+            }else if(shape_type == 1){ //if a line is hit
+
+                Line l = lines[shape_id];
                 
+                vec2 lineDir = normalize(l.end_point - l.start_point);
+                float lineLength = length(l.end_point - l.start_point);
+                vec2 perpendicular_vector = vec2(-lineDir.y, lineDir.x);
+
+                vec2 pixelToStart = pixelPos - l.start_point;
+                float projectionLength = dot(pixelToStart, lineDir);
+                
+                //calculate if it hits to the right or left
+                float side = dot(pixelToStart, perpendicular_vector);
+
+                //interpolate colors
+                float interpolation_factor = clamp(projectionLength / lineLength, 0.0, 1.0);
+                vec4 interpolated_color_left = mix(l.color_left[0], l.color_left[1], interpolation_factor);
+                vec4 interpolated_color_right = mix(l.color_right[0], l.color_right[1], interpolation_factor);
+
+                float epsilon = 0.001;
+                float weightFactor =  1/(distance(pixelPos,intersection*screen_dimensions) + epsilon);
+
+                if (side < 0.0) {
+                    accumulated_color += interpolated_color_right * weightFactor;
+                } else {
+                    accumulated_color += interpolated_color_left * weightFactor;
+                }
             }
         }
     }
 
-    // Output the accumulated color as the final color for this pixel
     outColor = accumulated_color;
 }

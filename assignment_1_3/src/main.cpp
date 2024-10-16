@@ -36,7 +36,7 @@ int number_of_circles = 12;
 //Path to XML files and the xml file itself
 std::filesystem::path xml_folder(RESOURCE_ROOT "/resources/diffusionCurveXMLs");
 //The xml file name is in a larger buffer for some leniency when the user changes it
-char file_name_buffer[file_name_buffer_size] = "arch.xml";
+char file_name_buffer[file_name_buffer_size] = "circles2.xml";
 
 //The maximum amount curves should be subdivided to fit the lines better.
 int max_curve_subdivision = 0;
