@@ -18,12 +18,6 @@ layout(location = 1) out vec3 finalVelocity;
 layout(location = 2) out vec3 finalBounceData;
 
 void main() {
-
-    //ivec2 fragCoord = ivec2(gl_FragCoord.xy);
-    // vec3 currentPosition = texelFetch(previousPositions, fragCoord, 0).xyz;
-    // vec3 currentVelocity = texelFetch(previousVelocities, fragCoord, 0).xyz;
-    // vec3 currentBounceData = texelFetch(previousBounceData, fragCoord, 0).xyz;
-    
     // Fetch particle's current position and velocity
     vec3 currentPosition = texture(previousPositions, gl_FragCoord.xy/textureSize(previousPositions,0)).xyz;
     vec3 currentVelocity = texture(previousVelocities, gl_FragCoord.xy/textureSize(previousVelocities,0)).xyz;
