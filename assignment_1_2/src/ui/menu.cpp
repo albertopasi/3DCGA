@@ -75,7 +75,7 @@ void Menu::drawParticleColorControls() {
     ImGui::EndDisabled();
     ImGui::Checkbox("Use bounce-based colors", &m_config.useBounceColor);
     ImGui::BeginDisabled(!m_config.useBounceColor);
-    ImGui::SliderInt("Bounce threshold", &m_config.bounceThreshold, 0, 50);
+    ImGui::SliderInt("Bounce threshold", &m_config.bounceThreshold, 1, 50);
     ImGui::SliderInt("Bounce frames", &m_config.bounceFrames, 0, 500);
     ImGui::ColorEdit3("Bounce color", glm::value_ptr(m_config.bounceColor));
 
