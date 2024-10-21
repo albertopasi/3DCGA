@@ -32,13 +32,9 @@ void main() {
     float offset = 0.001;
 
     // blinking matters
-    if(currentBounceData.x == bounceThreshold){
+    if(currentBounceData.x >= bounceThreshold){
         currentBounceData.x = 0;
         currentBounceData.y = bounceFrames;
-    }
-
-    if(currentBounceData.y > 0){
-        currentBounceData.y --;
     }
     
     // ===== Task 1.3 Inter-particle Collision =====
@@ -82,6 +78,10 @@ void main() {
         finalVelocity = reflect (finalVelocity, normal);
 
         currentBounceData.x ++;
+    }
+
+    if(currentBounceData.y > 0){
+        currentBounceData.y --;
     }
 
     finalBounceData = vec3(currentBounceData.x, currentBounceData.y, 0.0);
