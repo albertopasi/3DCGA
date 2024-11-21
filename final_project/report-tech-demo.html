@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Assignment 2 - Tech Demo</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <style>
+/*
+ * Slightly modified version of the following theme:;
+ * https://github.com/markdowncss/air
+ */
+html {
+  font-size: 12px;
+}
+
+@media print {
+  *:before,
+  *:after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html {
+    font-size: 14px;
+  }
+  body {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+
+  a[href^="#"]:after,
+  a[href^="javascript:"]:after {
+    content: "";
+  }
+
+  pre,
+  blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+}
+
+@media screen and (min-width: 32rem) and (max-width: 48rem) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media screen and (min-width: 48rem) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  line-height: 1.85;
+  padding-bottom: 2rem;
+}
+
+p,
+.air-p {
+  font-size: 1rem;
+  margin-bottom: 1.3rem;
+}
+
+h1,
+.air-h1,
+h2,
+.air-h2,
+h3,
+.air-h3,
+h4,
+.air-h4 {
+  margin: 1.414rem 0 .5rem;
+  font-weight: inherit;
+  line-height: 1.42;
+}
+
+h1,
+.air-h1 {
+  margin-top: 0;
+  font-size: 3.998rem;
+}
+
+h2,
+.air-h2 {
+  font-size: 2.827rem;
+}
+
+h3,
+.air-h3 {
+  font-size: 1.999rem;
+}
+
+h4,
+.air-h4 {
+  font-size: 1.414rem;
+}
+
+h5,
+.air-h5 {
+  font-size: 1.121rem;
+}
+
+h6,
+.air-h6 {
+  font-size: .88rem;
+}
+
+small,
+.air-small {
+  font-size: .707em;
+}
+
+/* https://github.com/mrmrs/fluidity */
+
+img,
+canvas,
+iframe,
+video,
+svg,
+select,
+textarea {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+
+  max-width: 100%;
+}
+
+figcaption {
+  text-align: center;
+}
+.subfigures {
+  text-align: center;
+}
+.subfigures figure {
+  float: left;
+  width: 50%;
+  margin:0;
+  display: inline-block;
+}
+.subfigures img {
+  display: inline-block;
+  width: 90%;
+}
+.subfigures figure figcaption {
+  display: inline-block;
+}
+
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,300);
+
+body {
+  color: #444;
+  font-family: 'Open Sans', Helvetica, sans-serif;
+  font-weight: 300;
+  margin: 6rem auto 1rem;
+  max-width: 48rem;
+  text-align: justify;
+}
+
+/*img {
+  border-radius: 50%;
+  height: 200px;
+  margin: 0 auto;
+  width: 200px;
+}*/
+
+a,
+a:visited {
+  color: #3498db;
+}
+
+a:hover,
+a:focus,
+a:active {
+  color: #2980b9;
+}
+
+pre:not(.sourceCode) {
+  background-color: #fafafa;
+}
+pre {
+  padding: 1rem;
+  text-align: left;
+}
+
+blockquote {
+  margin: 0;
+  border-left: 5px solid #7a7a7a;
+  font-style: italic;
+  padding: 1.33em;
+  text-align: left;
+}
+
+ul,
+ol,
+li {
+  text-align: left;
+}
+
+p {
+  color: #777;
+}
+
+/*
+ * Copied from w3schools.com:
+ * https://www.w3schools.com/css/css_table.asp
+ *
+ * Table header colour changed to CGV home style (taken from CGV Powerpoint template)
+ */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+table td, table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+table tr:nth-child(even){background-color: #f2f2f2;}
+/* table tr:hover {background-color: #ddd;} */
+table th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #10A5D7;
+  color: white;
+}
+
+.immagine {
+    float: left;
+    width: 50%; /* O imposta una larghezza specifica in pixel */
+    height: auto;
+  }
+
+</style>
+  <div style="overflow:auto;">
+  	<p style="float:left;margin:0;"><b>CS4515</b> -Assignment 2 - Tech Demo - 3D Computer Graphics and Animation</p><p style="float:right;margin:0;">Leonardo Lago, Lorenzo Sibi, Alberto Pasinato</p>
+  </div>
+
+  <hr>
+  <br/>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Assignment 2 - Tech Demo</h1>
+</header>
+<strong>Video present!</strong>
+<p>This report documents the creation of a comprehensive 3D Tech Demo developed using OpenGL. 
+    The demo showcases various computer graphics techniques, meeting the minimal requirements and integrating additional advanced features. 
+    The application runs as a single cohesive unit where each feature can be toggled via a custom UI.</p>
+
+<h2 id="grading">Implemented Features</h2>
+    <h3>Minimal Features</h3>
+
+        <h4>1. Multiple Viewpoints</h3>
+            <ul>
+                <li>Leonardo Lago: 50%</li>
+                <li>Alberto Pasinato: 50%</li>
+            </ul>
+            <p>The demo includes multiple camera viewpoints, including a <strong>third-person camera</strong> that follows a character and a <strong>bird-view</strong> camera that is also the view of the minimap.</p>
+            <p><strong>Implementation:</strong> This was achieved using OpenGL and ImGui to control and switch between viewpoints.</p>
+            
+            <p><strong>Screenshots:</strong></p>
+            <img src="./report_resources\multiple-viewpoints\mv-1.png" alt="Third-Person View" class="immagine">
+            <img src="./report_resources\multiple-viewpoints\mv-2.png" alt="Top-Down View" class="immagine">
+
+        <h4>2. Advanced Shading (PBR)</h4>
+            <ul>
+                <li>Lorenzo Sibi: 100%</li>
+            </ul>
+            <p><strong>Details:</strong> Implemented PBR (Physically Based Rendering) shaders to simulate realistic material properties, including metallic and rough surfaces. 
+                State-of-the-art methodologies were implemented. In particular, the documentation of the Filament project was followed as a theoretical basis (references can be found at the end of this report).
+            </p>
+            <p><strong>Controls:</strong> L for positioning the light on the current camera position.</p>
+            <p><strong>Screenshots:</strong></p>
+            <img src="report_resources\pbr\pbr-normal.png" alt="PBR Shading with normal mapping" class="subfigures">
+            <img src="report_resources\pbr\pbr-no-normal.png" alt="PBR Shading without normal mapping" class="subfigures">
+            <img src="report_resources\pbr\pbr-metallic.png" alt="Metallic Surfaces" class="subfigures">
+
+        <h4>3. Material Textures</h4>
+            <ul>
+                <li>Lorenzo Sibi: 100%</li>
+            </ul>
+            <p>
+                Applied material textures, such as kd (diffuse), ks (specular), and roughness maps, to various objects within the scene.
+            </p>
+            <p>
+                <strong>Implementation:</strong> In this case, it was decided to incorporate this feature within the already mentioned PBR. 
+                For example, the KD coefficient is automatically calculated as 1 - KS. For further details see the pbr_frag.glsl shader.
+            </p>
+            <p>For the screenshots, refer to the previous section.</p>
+            
+        <h4>4. Normal Mapping</h4>
+            <ul>
+                <li>Leonardo Lago: 100%</li>
+            </ul>
+            <p>
+                <strong>Details:</strong> Integrated normal mapping for detailed surface textures, creating the illusion of depth and complexity without additional geometry. 
+                it is possible to activate/deactivate normal mapping directly from the GUI, using the appropriate checkbox.
+            </p>
+            <p><strong>Implementation:</strong> Implemented by modifying fragment shaders to account for normal texture maps. Tangent and bitangent were added to each vertex for calculating in tangent space.</p>
+            <p><strong>Screenshots:</strong></p>
+            <img src="report_resources\pbr\normal-mapping.png" alt="Normal mapping with a dragon skin texture (see references)" class="subfigures">
+            <img src="report_resources\pbr\normal-mapping2.png" alt="Normal mapping with a wood texture (see references)" class="subfigures">
+
+        <h4>5. Environment Mapping</h4>
+            <ul>
+                <li>Alberto Pasinato: 100%</li>
+            </ul>
+            <p><strong>Details:</strong> Added environment mapping using cube maps for realistic <strong>refraction</strong> (first picture) and <strong>reflections</strong> (second picture) on surfaces.</p>
+            <p><strong>Implementation:</strong> Implemented through GLSL and cube maps textures.</p>
+            <p><strong>Screenshots:</strong></p>
+            <img src="report_resources\envornment-mapping\env-map-1-refraction.png" alt="Environment Mapping with refraction">
+            <img src="report_resources\envornment-mapping\env-map-2-reflection.png" alt="Environment Mapping with reflection">
+
+
+        <h4>6. Smooth Paths (Bézier Curves)</h4>
+        <ul>
+            <li>Leonardo Lago: 40%</li>
+            <li>Lorenzo Sibi: 30%</li>
+            <li>Alberto Pasinato: 30%</li>
+        </ul>
+        <p><strong>Details:</strong> The demo includes a model that moves along a smooth path composed of three Cubic Bézier curves. The rendering of the path can be toggled on or off.</p>
+        <p><strong>Implementation:</strong> Used mathematical functions to generate and render the path, with movement calculated in real-time. Used tessellation shaders to render the 3 curves on the scree. </p>
+
+        <h4>7. Hierarchical transformations</h4>
+        <ul>
+            <li>Alberto Pasinato: 80%</li>
+            <li>Leonardo Lago: 10%</li>
+            <li>Lorenzo Sibi: 10%</li>
+        </ul>
+        <p><strong>Details:</strong>Robot with 11 different parts that can be rotated indipendently on their own rotation centers.</p>
+        <p><strong>Implementation:</strong>Used transformations and rotation calculated in the right order.</p>
+        <p><strong>Commands:</strong>
+        <ul>
+            <li>Head rotation: H</li>
+            <li>Upper arms rotation: U</li>
+            <li>Forearms rotation: F </li>
+            <li>Hands rotation: J</li>
+            <li>Legs rotation: T</li>
+            <li>Foot rotation: K</li>
+            <li>Full rotation: R</li>
+            <li>Full translation: arrow keys</li>
+        </ul>
+        By defautl the rotation applies to the right parts of the robot. By adding CTRL to the commands the left parts are used. Using SHIFT in combination let rotate by the negative angle.
+        </p>
+
+        <h2>Extra Features</h2>
+            <h4>1. [TERRAIN] Procedurally Generated Terrain</h4>
+                <ul>
+                    <li>Leonardo Lago: 33%</li>
+                    <li>Lorenzo Sibi: 33%</li>
+                    <li>Alberto Pasinato: 33%</li>
+                </ul>
+                <p>
+                    <strong>Details:</strong> Created a procedurally generated terrain using <strong>tessellation</strong> and Perlin noise (<i>Ken Perlin</i>), to simulate realistic topography.. 
+                    For the implementation of the latter, the theoretical basis shown <a href="https://web.archive.org/web/20170201233641/https://mzucker.github.io/html/perlin-noise-math-faq.html">here</a> was followed (see also references).
+                </p>
+                <p>
+                    <strong>Implementation:</strong> Implemented by generating a heightmap texture with perlin noise and fractal brownian motion in the cpu and then sampling it on the shaders. The terrain is generated using tessellation control and tessellation evaluation shaders and dynamic LOD.
+                </p>
+                <p><strong>Screenshots:</strong></p>
+                <img src="report_resources/procedural/procedural1.png" alt="Procedural Terrain with seed 1">
+                <img src="report_resources/procedural/procedural2.png" alt="Procedural Terrain with seed 10">
+
+
+            <h4>2. [TERRAIN] Textured Terrain based on height</h4>
+                <ul>
+                    <li>Lorenzo Sibi: 50%</li>
+                    <li>Leonardo Lago: 50%</li>
+                </ul>
+                <p>
+                    <strong>Details:</strong> Applied 4 different texture on the terrain based on the height.
+                </p>
+                <p>
+                    <strong>Implementation:</strong> Implemented by sampling the textures and linearly interpolate between the two nearest.
+                </p>
+                <p><strong>Screenshots:</strong></p>
+                <p>For screenshots, please refer to the images in the previous section regarding the procedurally generated terrain</p>
+
+            <h4>3. Particle Effects</h4>
+            <ul>
+                <li>Lorenzo Sibi: 20% (started)</li>
+                <li>Alberto Pasinato: 40%</li>
+                <li>Leonardo Lago: 40%</li>
+            </ul>
+            <p><strong>Details:</strong> Implemented a particle system for simulating fire effects.</p>
+            <p><strong>Implementation:</strong> Used geometry shaders and transform feedback for particle generation and control.
+            For rendering billboards and a texture atlas have been used.</p>
+            <p><strong>Screenshots:</strong></p>
+            <img src="report_resources\particle-effects\particle1.png" alt="Particle Effects 1" class="subfigure">
+            <img src="report_resources\particle-effects\particle2.png" alt="Particle Effects 2" class="subfigure">
+
+            <h4>4. Ambient Occlusion</h4>
+            <ul>
+                <li>Lorenzo Sibi: 70%</li>
+                <li>Alberto Pasiinato: 30%</li>
+            </ul>
+            <p><strong>Implementation:</strong> A simple ambient occlusion algorithm is used during PBR shading; the ambient occlusion map simulates the behavior of ambient light being occluded by nearby geometry.</p>
+            <p>We do not include any screenshot because the AO is automatically rendered during the PBR (see the pbr_frag.glsl code for more details).</p>
+            
+            <h4>5. Minimap</h3>
+                <ul>
+                    <li>Alberto Pasinato: 50%</li>
+                    <li>Lorenzo Sibi: 50%</li>
+                </ul>
+                <p><strong>Details:</strong> A 2D minimap was integrated into the demo to display the surrounding environment from a bird’s-eye view.</p>
+                <p><strong>Implementation:</strong> The `Minimap` class was created with customizable dimensions (default 200x200). The class initializes a framebuffer 
+                    and shader, constructs the VAO and VBO for a quad representing the minimap, and sets up vertex attributes for position and texture coordinates. 
+                    The minimap is rendered using OpenGL functions and a dedicated shader, ensuring it is correctly overlaid without depth interference by temporarily disabling depth testing.</p>
+                <p><strong>Screenshots:</strong></p>
+                <img src="report_resources\minimap.png" alt="Minimap" class="subfigure">
+
+            <h4>6. Constant Speed Bezier Curve</h4>
+                <ul>
+                    <li>Alberto Pasinato: 50%</li>
+                    <li>Leonardo Lago: 50%</li>
+                </ul>
+                <p><strong>Details:</strong> Constant speed on Bezier Curves archived using reparametition of the variable t, using an ordered map (look-up table) and linearly interpolating</p>
+                <p><strong>Implementation:</strong> A lookup table was generated to map the parameter <em>t</em> to the arc length distance traveled. This method ensures uniform movement speed across the curve:</p>
+                <ul>
+                    <li><strong>Arc Length Calculation:</strong> Sampled points along the curve were evaluated and their distances were accumulated to create a distance-to-parameter mapping.</li>
+                    <li><strong>Position Calculation:</strong> The <code>calculatePositionOnBezier</code> function computes positions on the curve using weighted combinations of control points.</li>
+                    <li><strong>Time Mapping:</strong> The <code>getTimeFromDistance</code> function interpolates the parameter <em>t</em> based on the desired distance using the lookup table.</li>
+                </ul>
+                <p><strong>Screenshots:</strong></p>
+                <img src="report_resources\constant-speed\constant1.png" alt="Constant Speed on Bézier Curve 1" class="subfigure">
+                <img src="report_resources\constant-speed\constant2.png" alt="Constant Speed on Bézier Curve 2" class="subfigures">
+
+            <h4>7. Camera Walking Simulation</h4>
+                <ul>
+                    <li>Alberto Pasinato: 50%</li>
+                    <li>Lorenzo Sibi: 50%</li>
+                </ul>
+                <p><strong>Details:</strong> Camera follows the terrain as it moves. Calculated by interpolating bilinearly in the heightmap 
+                    values closest to the camera.</p>
+                    
+                    <p><strong>Screenshots:</strong></p>
+                    <img src="report_resources\walking\walking-start-point.png" alt="Start point of the walking feature" class="subfigure">
+                    <img src="report_resources\walking\walking-end-point.png" alt="End point of the walking feature" class="subfigures">
+
+            <h4>8. Multiple Light Shadows</h4>
+                <ul>
+                    <li>Leonardo Lago: 50%</li>
+                    <li>Lorenzo Sibi: 50%</li>
+                </ul>
+                <p><strong>Details:</strong>Shadows generated by 2 lights using shadowmapping and summing the contributions of the two lights 
+                    in a lambert diffusion shader.
+                </p>
+                <p><strong>Screenshots:</strong></p>
+                <img src="report_resources\multi-shadows/multi-shadows-1.png" alt="Multiple shadows showcase - first part" class="subfigure">
+                <img src="report_resources\multi-shadows/multi-shadows-2.png" alt="Multiple shadows showcase - second part" class="subfigures">
+
+
+<h4>References</h4>
+
+<div>
+    <a href="https://google.github.io/filament/Filament.md.html">Filament</a>
+    <a href="https://web.archive.org/web/20170201233641/https://mzucker.github.io/html/perlin-noise-math-faq.html">Perlin noise</a>
+    <a href="https://www.textures.com/browse/pbr-materials/114558">PBR texture maps used for PBR shading</a>
+    <a id="ambient-occlusion" href="http://wiki.polycount.com/wiki/Ambient_occlusion_map">Ambient Occlusion</a>
+    <a href="https://www.turbosquid.com/3d-models/3d-vht1-veritech-hover-tank-model-1861201">Robot model used in the Tech-Demo</a>
+</div>
+
+</body>
+</html>

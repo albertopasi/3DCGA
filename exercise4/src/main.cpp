@@ -121,10 +121,10 @@ int main()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Load mesh from disk.
-    //const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/scene.obj"));
+    const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/scene.obj"));
 
     // Load mesh from disk.
-    const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/sceneWithBox.obj"));
+    //const Mesh mesh = mergeMeshes(loadMesh(RESOURCE_ROOT "resources/sceneWithBox.obj"));
 
 
     // Create Element(Index) Buffer Object and Vertex Buffer Objects.
